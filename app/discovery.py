@@ -22,7 +22,7 @@ async def discover_tacx_trainers(timeout: int = 5) -> List[Dict[str, Any]]:
         await scanner.stop()
         
         # Get discovered devices
-        discovered = scanner.discovered_devices
+        discovered = await scanner.discover()
         
         # Filter for Tacx devices
         for device in discovered:
@@ -63,7 +63,7 @@ async def discover_all_devices(timeout: int = 5) -> List[Dict[str, Any]]:
         await scanner.stop()
         
         # Get all discovered devices
-        discovered = scanner.discovered_devices
+        discovered = await scanner.discover()
         
         for device in discovered:
             device_name = device.name or "Unknown"
