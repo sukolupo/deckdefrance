@@ -95,18 +95,32 @@ async def test_trainer_connection():
 @app.post("/api/discover-tacx")
 async def discover_tacx():
     """Discover Tacx trainers via Bluetooth scan."""
-    devices = await discover_tacx_trainers(timeout=5)
-    return {
-        "found": len(devices),
-        "devices": devices,
-    }
+    try:
+        devices = await discover_tacx_trainers(timeout=5)
+        return {
+            "found": len(devices),
+            "devices": devices,
+        }
+    except RuntimeError as e:
+        return {
+            "found": 0,
+            "devices": [],
+            "error": str(e),
+        }
 
 
 @app.post("/api/discover-all")
 async def discover_all():
     """Discover all Bluetooth devices."""
-    devices = await discover_all_devices(timeout=5)
-    return {
-        "found": len(devices),
-        "devices": devices,
-    }
+    try:
+        devices = await discover_all_devices(timeout=5)
+        return {
+            "found": len(devices),
+            "devices": devices,
+        }
+    except RuntimeError as e:
+        return {
+            "found": 0,
+            "devices": [],
+            "error": str(e),
+        }

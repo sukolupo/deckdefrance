@@ -211,7 +211,9 @@ async function discoverTacxTrainers() {
 
         const data = await response.json();
 
-        if (data.found === 0) {
+        if (data.error) {
+            listDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+        } else if (data.found === 0) {
             listDiv.innerHTML = '<p>No Tacx trainers found. Make sure your trainer is powered on and in pairing mode.</p>';
         } else {
             let html = '<div class="device-list-items">';
@@ -257,7 +259,9 @@ async function discoverAllDevices() {
 
         const data = await response.json();
 
-        if (data.found === 0) {
+        if (data.error) {
+            listDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+        } else if (data.found === 0) {
             listDiv.innerHTML = '<p>No Bluetooth devices found.</p>';
         } else {
             let html = '<div class="device-list-items">';

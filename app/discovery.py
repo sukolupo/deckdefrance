@@ -16,31 +16,23 @@ async def discover_tacx_trainers(timeout: int = 5) -> List[Dict[str, Any]]:
     devices = []
     
     try:
-        scanner = BleakScanner()
-        await scanner.start()
-        await asyncio.sleep(timeout)
-        await scanner.stop()
-        
-        # Get discovered devices
-        discovered = await scanner.discover()
-        
+        discovered = await BleakScanner.discover(timeout=timeout)
+
         # Filter for Tacx devices
         for device in discovered:
             device_name = device.name or "Unknown"
-            # Look for Tacx-related names
             if "tacx" in device_name.lower() or "trainer" in device_name.lower():
                 devices.append({
                     "mac_address": device.address,
                     "name": device_name,
-                    "rssi": device.rssi,  # Signal strength
+                    "rssi": device.rssi,
                 })
-        
-        # Sort by signal strength (strongest first)
+
         devices.sort(key=lambda x: x.get("rssi", 0), reverse=True)
-        
+
     except Exception as e:
-        print(f"Error discovering Tacx trainers: {e}")
-    
+        raise RuntimeError(f"Bluetooth discovery failed: {e}")
+
     return devices
 
 
@@ -57,14 +49,8 @@ async def discover_all_devices(timeout: int = 5) -> List[Dict[str, Any]]:
     devices = []
     
     try:
-        scanner = BleakScanner()
-        await scanner.start()
-        await asyncio.sleep(timeout)
-        await scanner.stop()
-        
-        # Get all discovered devices
-        discovered = await scanner.discover()
-        
+        discovered = await BleakScanner.discover(timeout=timeout)
+
         for device in discovered:
             device_name = device.name or "Unknown"
             devices.append({
@@ -72,11 +58,10 @@ async def discover_all_devices(timeout: int = 5) -> List[Dict[str, Any]]:
                 "name": device_name,
                 "rssi": device.rssi,
             })
-        
-        # Sort by signal strength (strongest first)
+
         devices.sort(key=lambda x: x.get("rssi", 0), reverse=True)
-        
+
     except Exception as e:
-        print(f"Error discovering devices: {e}")
-    
+        raise RuntimeError(f"Bluetooth discovery failed: {e}")
+
     return devices
