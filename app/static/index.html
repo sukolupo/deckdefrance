@@ -13,6 +13,7 @@
 
         <nav class="nav-tabs">
             <button class="nav-btn active" data-tab="status">Status</button>
+            <button class="nav-btn" data-tab="control">Control</button>
             <button class="nav-btn" data-tab="discover">Discover</button>
             <button class="nav-btn" data-tab="config">Configuration</button>
             <button class="nav-btn" data-tab="test">Test Connection</button>
@@ -36,6 +37,51 @@
                 </div>
             </div>
             <button class="btn btn-refresh" onclick="checkStatus()">Refresh Status</button>
+        </div>
+
+        <!-- Control Tab -->
+        <div id="control" class="tab-content">
+            <h2>Trainer Control & Streaming</h2>
+            <div class="control-section">
+                <h3>Stream Status</h3>
+                <div class="status-card">
+                    <div class="status-item">
+                        <span class="status-label">Streaming:</span>
+                        <span id="stream-status-indicator" class="status-value">Stopped</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Message:</span>
+                        <span id="stream-status-message" class="status-value">Ready to start</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Stream Controls</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-success" id="stream-start-btn" onclick="startStreaming()">
+                        <span id="stream-start-text">Start Streaming</span>
+                    </button>
+                    <button class="btn btn-danger" id="stream-stop-btn" onclick="stopStreaming()" disabled>
+                        <span id="stream-stop-text">Stop Streaming</span>
+                    </button>
+                </div>
+                <button class="btn btn-secondary" onclick="refreshStreamStatus()" style="margin-top: 10px;">Refresh Status</button>
+            </div>
+
+            <div class="control-section">
+                <h3>Information</h3>
+                <p>
+                    Once streaming is started, the app will continuously read power data from your Tacx trainer 
+                    and send it to the virtual controller for Tour de France to process.
+                </p>
+                <ul>
+                    <li>Make sure your trainer is configured and selected in the Configuration tab</li>
+                    <li>The trainer should be connected and ready before starting the stream</li>
+                    <li>The virtual gamepad will emit power values on the Right Trigger (ABS_Z)</li>
+                    <li>Click "Stop Streaming" to safely disconnect and stop data transmission</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Discovery Tab -->

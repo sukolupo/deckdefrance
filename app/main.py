@@ -3,13 +3,21 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
+import asyncio
 
 from bleak import BleakClient
-from .mapper import map_tacx_to_controller
+from pycycling.cycling_power_service import CyclingPowerService
+from .mapper import map_tacx_to_controller, device
 from .config import get_config, update_config
 from .discovery import discover_tacx_trainers, discover_all_devices
+import uinput
 
 app = FastAPI(title="deckdefrance", version="0.1.0")
+
+# Global state for streaming
+streaming_task: asyncio.Task | None = None
+streaming_active = False
+streaming_message = ""
 
 # Serve static files (CSS, JS)
 static_dir = Path(__file__).parent / "static"
@@ -143,3 +151,122 @@ async def discover_all():
             "devices": [],
             "error": str(e),
         }
+
+
+async def stream_trainer_data(mac_address: str):
+    """Background task that streams trainer data to the controller."""
+    global streaming_active, streaming_message
+    
+    try:
+        async with BleakClient(mac_address, timeout=10.0) as client:
+            if not client.is_connected:
+                await client.connect()
+            
+            streaming_message = f"Connected to {mac_address}"
+            streaming_active = True
+            
+            trainer = CyclingPowerService(client)
+            
+            def power_handler(data):
+                """Handle incoming power data from trainer (synchronous callback)."""
+                try:
+                    watts = data.instantaneous_power
+                    max_target_watts = 300
+                    trigger_value = int((min(watts, max_target_watts) / max_target_watts) * 255)
+                    device.emit(uinput.ABS_Z, trigger_value)
+                except Exception as e:
+                    print(f"Error in power handler: {e}")
+            
+            trainer.set_cycling_power_measurement_handler(power_handler)
+            await trainer.enable_cycling_power_measurement_notifications()
+            
+            # Keep streaming until cancelled
+            while streaming_active:
+                await asyncio.sleep(0.1)
+    
+    except Exception as e:
+        streaming_message = f"Stream error: {str(e)}"
+    finally:
+        streaming_active = False
+
+
+@app.post("/api/start-streaming")
+async def start_streaming():
+    """Start streaming trainer data to the virtual controller."""
+    global streaming_task, streaming_active, streaming_message
+    
+    if streaming_active:
+        return {
+            "status": "already_streaming",
+            "message": streaming_message,
+        }
+    
+    config = get_config()
+    mac_address = config.get("tacx_mac_address", "XX:XX:XX:XX:XX:XX")
+    
+    if mac_address == "XX:XX:XX:XX:XX:XX":
+        return {
+            "status": "error",
+            "message": "Tacx MAC address not configured",
+        }
+    
+    try:
+        streaming_task = asyncio.create_task(stream_trainer_data(mac_address))
+        await asyncio.sleep(0.5)  # Give it a moment to connect
+        
+        if streaming_active:
+            return {
+                "status": "streaming",
+                "message": f"Streaming started on {mac_address}",
+            }
+        else:
+            return {
+                "status": "error",
+                "message": streaming_message,
+            }
+    except Exception as e:
+        streaming_active = False
+        return {
+            "status": "error",
+            "message": str(e),
+        }
+
+
+@app.post("/api/stop-streaming")
+async def stop_streaming():
+    """Stop streaming trainer data."""
+    global streaming_task, streaming_active
+    
+    if not streaming_active:
+        return {
+            "status": "idle",
+            "message": "Not currently streaming",
+        }
+    
+    try:
+        streaming_active = False
+        if streaming_task and not streaming_task.done():
+            streaming_task.cancel()
+            try:
+                await streaming_task
+            except asyncio.CancelledError:
+                pass
+        
+        return {
+            "status": "stopped",
+            "message": "Streaming stopped",
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+        }
+
+
+@app.get("/api/stream-status")
+async def stream_status():
+    """Get current streaming status."""
+    return {
+        "streaming": streaming_active,
+        "message": streaming_message,
+    }

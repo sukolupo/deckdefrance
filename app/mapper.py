@@ -52,7 +52,7 @@ async def run():
         print("Virtual Gamepad Initialized. Connected to Tacx!")
         trainer = CyclingPowerService(client)
         trainer.set_cycling_power_measurement_handler(power_data_handler)
-        await trainer.start_cycling_power_measurement()
+        await trainer.enable_cycling_power_measurement_notifications()
 
         while True:
             await asyncio.sleep(0.1)

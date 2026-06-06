@@ -298,6 +298,110 @@ function selectDevice(macAddress, deviceName) {
     showMessage('config-message', `Selected device: ${deviceName}`, 'success');
 }
 
+// Streaming Control
+async function startStreaming() {
+    const startBtn = document.getElementById('stream-start-btn');
+    const stopBtn = document.getElementById('stream-stop-btn');
+    const statusIndicator = document.getElementById('stream-status-indicator');
+    const statusMessage = document.getElementById('stream-status-message');
+    
+    startBtn.disabled = true;
+    statusMessage.textContent = 'Starting...';
+
+    try {
+        const response = await fetch('/api/start-streaming', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        if (data.status === 'streaming') {
+            statusIndicator.innerHTML = '<span class="status-badge connected">✓ Streaming</span>';
+            statusMessage.textContent = data.message;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        } else {
+            statusIndicator.innerHTML = '<span class="status-badge disconnected">✗ Error</span>';
+            statusMessage.textContent = data.message;
+            startBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error starting stream:', error);
+        statusIndicator.innerHTML = '<span class="status-badge disconnected">✗ Error</span>';
+        statusMessage.textContent = `Error: ${error.message}`;
+        startBtn.disabled = false;
+    }
+}
+
+async function stopStreaming() {
+    const startBtn = document.getElementById('stream-start-btn');
+    const stopBtn = document.getElementById('stream-stop-btn');
+    const statusIndicator = document.getElementById('stream-status-indicator');
+    const statusMessage = document.getElementById('stream-status-message');
+
+    stopBtn.disabled = true;
+    statusMessage.textContent = 'Stopping...';
+
+    try {
+        const response = await fetch('/api/stop-streaming', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        if (data.status === 'stopped') {
+            statusIndicator.innerHTML = '<span class="status-badge disconnected">✗ Stopped</span>';
+            statusMessage.textContent = data.message;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        } else {
+            statusMessage.textContent = data.message;
+        }
+    } catch (error) {
+        console.error('Error stopping stream:', error);
+        statusMessage.textContent = `Error: ${error.message}`;
+        stopBtn.disabled = false;
+    }
+}
+
+async function refreshStreamStatus() {
+    const statusIndicator = document.getElementById('stream-status-indicator');
+    const statusMessage = document.getElementById('stream-status-message');
+    const startBtn = document.getElementById('stream-start-btn');
+    const stopBtn = document.getElementById('stream-stop-btn');
+
+    try {
+        const response = await fetch('/api/stream-status', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        if (data.streaming) {
+            statusIndicator.innerHTML = '<span class="status-badge connected">✓ Streaming</span>';
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        } else {
+            statusIndicator.innerHTML = '<span class="status-badge disconnected">✗ Stopped</span>';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+        statusMessage.textContent = data.message;
+    } catch (error) {
+        console.error('Error refreshing status:', error);
+        statusMessage.textContent = `Error: ${error.message}`;
+    }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     checkStatus();
