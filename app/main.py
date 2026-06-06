@@ -78,27 +78,36 @@ async def test_trainer_connection():
 
     try:
         async with BleakClient(mac_address, timeout=10.0) as client:
-            connected = client.is_connected
-            if not connected:
+            if not client.is_connected:
+                await client.connect()
+
+            if not client.is_connected:
                 return {
                     "connected": False,
                     "message": f"Unable to connect to {mac_address}",
                 }
 
-            device_name = client.address
-            services = await client.get_services()
-            service_count = len(services)
+            device_name = client.address or mac_address
+            services = client.services
+            service_count = sum(1 for _ in services) if services else 0
 
             return {
                 "connected": True,
-                "message": f"Connected to {mac_address}",
+                "message": f"Connected to {device_name}",
                 "device_name": device_name,
                 "service_count": service_count,
             }
     except Exception as e:
+        error_msg = str(e)
+        # Check for BlueZ/DBus service errors (common on Steam Deck)
+        if "ServiceUnknown" in error_msg or "org.freedesktop.DBus" in error_msg:
+            return {
+                "connected": False,
+                "message": "BlueZ service unavailable. Bluetooth daemon may not be running or app lacks DBus access. Try: systemctl --user start bluetooth.service",
+            }
         return {
             "connected": False,
-            "message": str(e),
+            "message": error_msg,
         }
 
 

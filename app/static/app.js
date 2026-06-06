@@ -119,11 +119,11 @@ Cadence Input: ${cadence} RPM
 Resistance Input: ${resistance}
 
 MAPPED OUTPUT:
-├─ Cycling Power: ${mapping.cycling_power}W
-├─ Button A: ${mapping.button_a ? '✓ Active' : '✗ Inactive'}
-├─ Button B: ${mapping.button_b ? '✓ Active' : '✗ Inactive'}
-├─ Gear: ${mapping.gear}
-└─ Mode: ${mapping.mode.toUpperCase()}
+- Cycling Power: ${mapping.cycling_power}W
+- Button A: ${mapping.button_a ? '✓ Active' : '✗ Inactive'}
+- Button B: ${mapping.button_b ? '✓ Active' : '✗ Inactive'}
+- Gear: ${mapping.gear}
+- Mode: ${mapping.mode.toUpperCase()}
         `;
 
         document.getElementById('mapping-result').textContent = resultHtml;
@@ -156,14 +156,14 @@ async function testConnection() {
 
         if (data.connected) {
             messageDiv.innerHTML = `
-✓ <strong>Trainer Connected!</strong>
-Device: ${data.device_name || 'Unknown'}
-Power: ${data.power || 'N/A'}W
+✓ <strong>Trainer Connected!</strong><br>
+Device: ${data.device_name || 'Unknown'}<br>
+Services: ${data.service_count ?? 'N/A'}
             `;
             document.getElementById('connection-test').innerHTML = '<span class="status-badge connected">✓ Connected</span>';
         } else {
             messageDiv.innerHTML = `
-✗ <strong>Trainer Not Connected</strong>
+✗ <strong>Trainer Not Connected</strong><br>
 Details: ${data.message || 'Unable to reach trainer'}
             `;
             document.getElementById('connection-test').innerHTML = '<span class="status-badge disconnected">✗ Disconnected</span>';
