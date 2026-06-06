@@ -191,6 +191,109 @@ function showMessage(elementId, message, type) {
     }, 5000);
 }
 
+// Device Discovery
+async function discoverTacxTrainers() {
+    const btnElement = document.querySelector('[onclick="discoverTacxTrainers()"]');
+    const btnText = document.getElementById('discover-btn-text');
+    const listDiv = document.getElementById('discovered-list');
+
+    btnElement.disabled = true;
+    btnText.textContent = 'Scanning...';
+    listDiv.innerHTML = '<p>Scanning for Tacx trainers... (this may take up to 5 seconds)</p>';
+
+    try {
+        const response = await fetch('/api/discover-tacx', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        if (data.found === 0) {
+            listDiv.innerHTML = '<p>No Tacx trainers found. Make sure your trainer is powered on and in pairing mode.</p>';
+        } else {
+            let html = '<div class="device-list-items">';
+            data.devices.forEach(device => {
+                html += `
+                    <div class="device-item">
+                        <div class="device-name">${device.name}</div>
+                        <div class="device-mac">${device.mac_address}</div>
+                        <div class="device-signal">Signal: ${device.rssi} dBm</div>
+                        <button class="btn btn-small" onclick="selectDevice('${device.mac_address}', '${device.name}')">Select</button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            listDiv.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error discovering trainers:', error);
+        listDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+    } finally {
+        btnElement.disabled = false;
+        btnText.textContent = 'Scan for Tacx Trainers';
+    }
+}
+
+async function discoverAllDevices() {
+    const btnElement = document.querySelector('[onclick="discoverAllDevices()"]');
+    const btnText = document.getElementById('discover-all-btn-text');
+    const listDiv = document.getElementById('all-devices-list');
+
+    btnElement.disabled = true;
+    btnText.textContent = 'Scanning...';
+    listDiv.style.display = 'block';
+    listDiv.innerHTML = '<p>Scanning for all Bluetooth devices... (this may take up to 5 seconds)</p>';
+
+    try {
+        const response = await fetch('/api/discover-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        if (data.found === 0) {
+            listDiv.innerHTML = '<p>No Bluetooth devices found.</p>';
+        } else {
+            let html = '<div class="device-list-items">';
+            data.devices.forEach(device => {
+                html += `
+                    <div class="device-item">
+                        <div class="device-name">${device.name}</div>
+                        <div class="device-mac">${device.mac_address}</div>
+                        <div class="device-signal">Signal: ${device.rssi} dBm</div>
+                        <button class="btn btn-small" onclick="selectDevice('${device.mac_address}', '${device.name}')">Select</button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            listDiv.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error discovering devices:', error);
+        listDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+    } finally {
+        btnElement.disabled = false;
+        btnText.textContent = 'Scan All Devices';
+    }
+}
+
+function selectDevice(macAddress, deviceName) {
+    // Set the MAC address in the config tab
+    document.getElementById('tacx-mac').value = macAddress;
+    
+    // Switch to config tab
+    switchTab('config');
+    
+    // Show a success message
+    showMessage('config-message', `Selected device: ${deviceName}`, 'success');
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     checkStatus();

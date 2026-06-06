@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .mapper import map_tacx_to_controller
 from .config import get_config, update_config
+from .discovery import discover_tacx_trainers, discover_all_devices
 
 app = FastAPI(title="deckdefrance", version="0.1.0")
 
@@ -89,3 +90,23 @@ async def test_trainer_connection():
             "connected": False,
             "message": str(e),
         }
+
+
+@app.post("/api/discover-tacx")
+async def discover_tacx():
+    """Discover Tacx trainers via Bluetooth scan."""
+    devices = await discover_tacx_trainers(timeout=5)
+    return {
+        "found": len(devices),
+        "devices": devices,
+    }
+
+
+@app.post("/api/discover-all")
+async def discover_all():
+    """Discover all Bluetooth devices."""
+    devices = await discover_all_devices(timeout=5)
+    return {
+        "found": len(devices),
+        "devices": devices,
+    }

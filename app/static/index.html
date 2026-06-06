@@ -13,6 +13,7 @@
 
         <nav class="nav-tabs">
             <button class="nav-btn active" data-tab="status">Status</button>
+            <button class="nav-btn" data-tab="discover">Discover</button>
             <button class="nav-btn" data-tab="config">Configuration</button>
             <button class="nav-btn" data-tab="test">Test Connection</button>
         </nav>
@@ -35,6 +36,35 @@
                 </div>
             </div>
             <button class="btn btn-refresh" onclick="checkStatus()">Refresh Status</button>
+        </div>
+
+        <!-- Discovery Tab -->
+        <div id="discover" class="tab-content">
+            <h2>Discover Tacx Trainers</h2>
+            
+            <div class="discovery-section">
+                <p>Scan for available Tacx trainers on Bluetooth. Make sure your trainer is powered on and in pairing mode.</p>
+                <button class="btn btn-success" onclick="discoverTacxTrainers()">
+                    <span id="discover-btn-text">Scan for Tacx Trainers</span>
+                </button>
+            </div>
+
+            <div class="discovery-section">
+                <h3>Discovered Devices</h3>
+                <div id="discovered-list" class="device-list">
+                    <p>No devices discovered yet. Click "Scan for Tacx Trainers" to start scanning.</p>
+                </div>
+            </div>
+
+            <div class="discovery-section">
+                <h3>All Bluetooth Devices</h3>
+                <button class="btn btn-secondary" onclick="discoverAllDevices()">
+                    <span id="discover-all-btn-text">Scan All Devices</span>
+                </button>
+                <div id="all-devices-list" class="device-list" style="margin-top: 15px; display: none;">
+                    <p>Scanning...</p>
+                </div>
+            </div>
         </div>
 
         <!-- Configuration Tab -->

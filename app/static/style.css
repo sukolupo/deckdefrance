@@ -318,6 +318,81 @@ h1 {
     margin: 5px 0;
 }
 
+/* Discovery Styles */
+.discovery-section {
+    margin-bottom: 30px;
+}
+
+.discovery-section h3 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.discovery-section p {
+    color: #666;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.device-list {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    min-height: 50px;
+}
+
+.device-list-items {
+    display: grid;
+    gap: 12px;
+}
+
+.device-item {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.device-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.device-item > div:first-child {
+    flex: 1;
+}
+
+.device-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95em;
+}
+
+.device-mac {
+    font-family: 'Courier New', monospace;
+    color: #666;
+    font-size: 0.85em;
+    margin: 4px 0;
+}
+
+.device-signal {
+    color: #999;
+    font-size: 0.8em;
+    margin: 4px 0;
+}
+
+.btn-small {
+    padding: 8px 16px;
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .container {
@@ -342,5 +417,15 @@ h1 {
 
     .btn {
         width: 100%;
+    }
+
+    .device-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .device-item button {
+        width: 100%;
+        margin-top: 10px;
     }
 }

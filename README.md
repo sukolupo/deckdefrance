@@ -176,10 +176,28 @@ This will start the trainer connection handler that maps Tacx power directly to 
 - Trainer connection status
 - Configuration status
 
+### Discover Tab
+Automatically find your Tacx trainer via Bluetooth scanning:
+
+- **Scan for Tacx Trainers** - Scans specifically for Tacx devices (5-second scan)
+- **Discovered Devices List** - Shows all discovered Tacx trainers with:
+  - Device name
+  - MAC address (Bluetooth hardware ID)
+  - Signal strength (RSSI in dBm)
+  - One-click select button to configure the trainer
+- **Scan All Devices** - Shows all nearby Bluetooth devices (for debugging)
+
+**How to use:**
+1. Power on your Tacx trainer and ensure it's in pairing mode
+2. Click "Scan for Tacx Trainers"
+3. Wait for the scan to complete (up to 5 seconds)
+4. Click "Select" on your trainer in the list
+5. The MAC address is automatically populated in the Configuration tab
+
 ### Configuration Tab
 Configure the following parameters:
 
-- **Tacx MAC Address** - Bluetooth address of your trainer
+- **Tacx MAC Address** - Bluetooth address of your trainer (auto-filled via Discover tab)
 - **Max Target Watts** - Power ceiling for mapping (default: 300W)
 - **Cadence Threshold** - RPM trigger for button actions (default: 95 RPM)
 - **Power Threshold (Race Mode)** - Watts to activate race mode (default: 150W)
@@ -247,6 +265,47 @@ Response:
 Test connection to Tacx trainer.
 
 ## Configuration File
+### `POST /api/discover-tacx`
+Scan for Tacx trainers via Bluetooth.
+
+Response:
+```json
+{
+   "found": 1,
+   "devices": [
+      {
+         "mac_address": "AA:BB:CC:DD:EE:FF",
+         "name": "Tacx Turbo Trainer",
+         "rssi": -45
+      }
+   ]
+}
+```
+
+`rssi` is the signal strength in dBm (higher values closer to -30 indicate stronger signals).
+
+### `POST /api/discover-all`
+Scan for all nearby Bluetooth devices (not just Tacx).
+
+Response:
+```json
+{
+   "found": 5,
+   "devices": [
+      {
+         "mac_address": "AA:BB:CC:DD:EE:FF",
+         "name": "Tacx Turbo Trainer",
+         "rssi": -45
+      },
+      {
+         "mac_address": "11:22:33:44:55:66",
+         "name": "Steam Deck",
+         "rssi": -50
+      }
+   ]
+}
+```
+
 
 Configuration is stored in `config.json` in the project root. You can edit this file directly or use the web UI.
 
