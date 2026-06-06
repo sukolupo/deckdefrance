@@ -446,6 +446,48 @@ h1 {
     flex: 1;
 }
 
+/* Stream Data Display */
+.stream-data-display {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.stream-data-item {
+    background: white;
+    border-radius: 6px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stream-data-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.stream-data-value {
+    display: block;
+    font-size: 2em;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 4px;
+    font-family: 'Courier New', monospace;
+}
+
+.stream-data-unit {
+    display: block;
+    font-size: 0.85em;
+    color: #999;
+    font-weight: 500;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .container {

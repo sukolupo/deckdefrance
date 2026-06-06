@@ -323,6 +323,7 @@ async function startStreaming() {
             statusMessage.textContent = data.message;
             startBtn.disabled = true;
             stopBtn.disabled = false;
+            startStreamDataPolling();
         } else {
             statusIndicator.innerHTML = '<span class="status-badge disconnected">✗ Error</span>';
             statusMessage.textContent = data.message;
@@ -344,6 +345,7 @@ async function stopStreaming() {
 
     stopBtn.disabled = true;
     statusMessage.textContent = 'Stopping...';
+    stopStreamDataPolling();
 
     try {
         const response = await fetch('/api/stop-streaming', {
@@ -400,6 +402,69 @@ async function refreshStreamStatus() {
         console.error('Error refreshing status:', error);
         statusMessage.textContent = `Error: ${error.message}`;
     }
+}
+
+// Stream Data Polling
+let streamDataInterval = null;
+
+async function pollStreamData() {
+    try {
+        const response = await fetch('/api/stream-data', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        // Update power display
+        document.getElementById('stream-power').textContent = Math.round(data.watts || 0);
+        
+        // Update cadence display
+        document.getElementById('stream-cadence').textContent = Math.round(data.cadence || 0);
+        
+        // Calculate and display controller output (0-255 trigger value)
+        const max_target_watts = 300;
+        const trigger_value = Math.round((Math.min(data.watts || 0, max_target_watts) / max_target_watts) * 255);
+        document.getElementById('stream-trigger').textContent = trigger_value;
+    } catch (error) {
+        console.error('Error polling stream data:', error);
+    }
+}
+
+function startStreamDataPolling() {
+    // Poll every 200ms for smooth updates
+    streamDataInterval = setInterval(pollStreamData, 200);
+    // Do an initial poll right away
+    pollStreamData();
+}
+
+function stopStreamDataPolling() {
+    if (streamDataInterval) {
+        clearInterval(streamDataInterval);
+        streamDataInterval = null;
+    }
+    // Reset display
+    document.getElementById('stream-power').textContent = '0';
+    document.getElementById('stream-cadence').textContent = '0';
+    document.getElementById('stream-trigger').textContent = '0';
+}
+
+// Override startStreaming to include data polling
+const originalStartStreaming = startStreaming;
+async function startStreaming() {
+    const result = await originalStartStreaming();
+    startStreamDataPolling();
+    return result;
+}
+
+// Override stopStreaming to stop data polling
+const originalStopStreaming = stopStreaming;
+async function stopStreaming() {
+    stopStreamDataPolling();
+    const result = await originalStopStreaming();
+    return result;
 }
 
 // Initialize on page load

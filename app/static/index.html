@@ -70,6 +70,27 @@
             </div>
 
             <div class="control-section">
+                <h3>Real-time Data</h3>
+                <div class="stream-data-display">
+                    <div class="stream-data-item">
+                        <span class="stream-data-label">Power Output:</span>
+                        <span id="stream-power" class="stream-data-value">0</span>
+                        <span class="stream-data-unit">W</span>
+                    </div>
+                    <div class="stream-data-item">
+                        <span class="stream-data-label">Cadence:</span>
+                        <span id="stream-cadence" class="stream-data-value">0</span>
+                        <span class="stream-data-unit">RPM</span>
+                    </div>
+                    <div class="stream-data-item">
+                        <span class="stream-data-label">Controller Output:</span>
+                        <span id="stream-trigger" class="stream-data-value">0</span>
+                        <span class="stream-data-unit">/255</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
                 <h3>Information</h3>
                 <p>
                     Once streaming is started, the app will continuously read power data from your Tacx trainer 

@@ -18,6 +18,11 @@ app = FastAPI(title="deckdefrance", version="0.1.0")
 streaming_task: asyncio.Task | None = None
 streaming_active = False
 streaming_message = ""
+last_power_data = {
+    "watts": 0,
+    "cadence": 0,
+    "timestamp": None,
+}
 
 # Serve static files (CSS, JS)
 static_dir = Path(__file__).parent / "static"
@@ -155,7 +160,7 @@ async def discover_all():
 
 async def stream_trainer_data(mac_address: str):
     """Background task that streams trainer data to the controller."""
-    global streaming_active, streaming_message
+    global streaming_active, streaming_message, last_power_data
     
     try:
         async with BleakClient(mac_address, timeout=10.0) as client:
@@ -169,8 +174,20 @@ async def stream_trainer_data(mac_address: str):
             
             def power_handler(data):
                 """Handle incoming power data from trainer (synchronous callback)."""
+                global last_power_data
                 try:
                     watts = data.instantaneous_power
+                    cadence = getattr(data, 'crank_revolutions', 0)
+                    
+                    # Update global data for display
+                    import time
+                    last_power_data = {
+                        "watts": watts,
+                        "cadence": cadence,
+                        "timestamp": time.time(),
+                    }
+                    
+                    # Emit to controller
                     max_target_watts = 300
                     trigger_value = int((min(watts, max_target_watts) / max_target_watts) * 255)
                     device.emit(uinput.ABS_Z, trigger_value)
@@ -270,3 +287,9 @@ async def stream_status():
         "streaming": streaming_active,
         "message": streaming_message,
     }
+
+
+@app.get("/api/stream-data")
+async def stream_data():
+    """Get current streaming data (power, cadence, etc)."""
+    return last_power_data
