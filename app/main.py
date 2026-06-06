@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
 
+from bleak import BleakClient
 from .mapper import map_tacx_to_controller
 from .config import get_config, update_config
 from .discovery import discover_tacx_trainers, discover_all_devices
@@ -69,22 +70,31 @@ async def test_trainer_connection():
     config = get_config()
     mac_address = config.get("tacx_mac_address", "XX:XX:XX:XX:XX:XX")
 
-    # Check if MAC address is configured
     if mac_address == "XX:XX:XX:XX:XX:XX":
         return {
             "connected": False,
             "message": "Tacx MAC address not configured",
         }
 
-    # Attempt to test connection (would require actual BLE implementation)
     try:
-        # This is a placeholder - actual implementation would use bleak
-        return {
-            "connected": False,
-            "message": f"Attempting to connect to {mac_address}... (Run trainer-specific code for actual connection)",
-            "device_name": None,
-            "power": None,
-        }
+        async with BleakClient(mac_address, timeout=10.0) as client:
+            connected = client.is_connected
+            if not connected:
+                return {
+                    "connected": False,
+                    "message": f"Unable to connect to {mac_address}",
+                }
+
+            device_name = client.address
+            services = await client.get_services()
+            service_count = len(services)
+
+            return {
+                "connected": True,
+                "message": f"Connected to {mac_address}",
+                "device_name": device_name,
+                "service_count": service_count,
+            }
     except Exception as e:
         return {
             "connected": False,
