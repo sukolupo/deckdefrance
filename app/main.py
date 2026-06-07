@@ -4,6 +4,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
 import asyncio
+import time
+from collections import deque
 
 from bleak import BleakClient
 from pycycling.cycling_power_service import CyclingPowerService
@@ -23,6 +25,7 @@ last_power_data = {
     "cadence": 0,
     "timestamp": None,
 }
+streaming_log = deque(maxlen=100)
 
 # Serve static files (CSS, JS)
 static_dir = Path(__file__).parent / "static"
@@ -174,18 +177,23 @@ async def stream_trainer_data(mac_address: str):
             
             def power_handler(data):
                 """Handle incoming power data from trainer (synchronous callback)."""
-                global last_power_data
+                global last_power_data, streaming_log
                 try:
                     watts = data.instantaneous_power
                     cadence = getattr(data, 'crank_revolutions', 0)
+                    now = time.time()
                     
-                    # Update global data for display
-                    import time
                     last_power_data = {
                         "watts": watts,
                         "cadence": cadence,
-                        "timestamp": time.time(),
+                        "timestamp": now,
                     }
+                    
+                    streaming_log.append({
+                        "time": now,
+                        "watts": watts,
+                        "cadence": cadence,
+                    })
                     
                     # Emit to controller
                     max_target_watts = 300
@@ -229,16 +237,18 @@ async def start_streaming():
     
     try:
         streaming_task = asyncio.create_task(stream_trainer_data(mac_address))
-        await asyncio.sleep(0.5)  # Give it a moment to connect
+        # Wait up to 10 seconds for BLE connection
+        for _ in range(20):
+            if streaming_active:
+                return {
+                    "status": "streaming",
+                    "message": f"Streaming started on {mac_address}",
+                }
+            if streaming_task.done():
+                break
+            await asyncio.sleep(0.5)
 
-        # If the background task set streaming_active, we're streaming
-        if streaming_active:
-            return {
-                "status": "streaming",
-                "message": f"Streaming started on {mac_address}",
-            }
-
-        # If the task finished quickly, surface its exception
+        # If the task finished, surface its exception
         if streaming_task.done():
             exc = None
             try:
@@ -253,10 +263,9 @@ async def start_streaming():
                     "message": f"Background task failed: {msg}",
                 }
 
-        # Fallback to any streaming_message set by the worker
         return {
             "status": "error",
-            "message": streaming_message or "Failed to start streaming (no additional details)",
+            "message": streaming_message or "BLE connection timed out after 10s",
         }
     except Exception as e:
         streaming_active = False
@@ -310,3 +319,9 @@ async def stream_status():
 async def stream_data():
     """Get current streaming data (power, cadence, etc)."""
     return last_power_data
+
+
+@app.get("/api/stream-log")
+async def stream_log_endpoint():
+    """Get recent streaming log entries."""
+    return list(streaming_log)

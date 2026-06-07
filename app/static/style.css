@@ -488,6 +488,71 @@ h1 {
     font-weight: 500;
 }
 
+/* Stream Log */
+.stream-log {
+    background: #1a1a2e;
+    border-radius: 8px;
+    padding: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+}
+
+.stream-log-empty {
+    color: #666;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.stream-log-entry {
+    display: flex;
+    gap: 15px;
+    padding: 6px 8px;
+    border-bottom: 1px solid #2a2a4e;
+    color: #a0a0d0;
+    transition: background 0.2s;
+}
+
+.stream-log-entry:hover {
+    background: #2a2a4e;
+}
+
+.stream-log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-time {
+    color: #888;
+    min-width: 80px;
+}
+
+.log-watts {
+    color: #48bb78;
+    min-width: 60px;
+    font-weight: 600;
+}
+
+.log-cadence {
+    color: #667eea;
+    min-width: 70px;
+}
+
+.log-trigger {
+    color: #f56565;
+    font-weight: 600;
+}
+
+/* Chart */
+.chart-container {
+    background: #1a1a2e;
+    border-radius: 8px;
+    padding: 15px;
+    height: 300px;
+    position: relative;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .container {

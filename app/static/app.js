@@ -393,6 +393,10 @@ async function refreshStreamStatus() {
             statusIndicator.innerHTML = '<span class="status-badge connected">✓ Streaming</span>';
             startBtn.disabled = true;
             stopBtn.disabled = false;
+            // Auto-start polling if streaming is active but polling isn't running
+            if (!streamDataInterval) {
+                startStreamDataPolling();
+            }
         } else {
             statusIndicator.innerHTML = '<span class="status-badge disconnected">✗ Stopped</span>';
             startBtn.disabled = false;
@@ -407,6 +411,151 @@ async function refreshStreamStatus() {
 
 // Stream Data Polling
 let streamDataInterval = null;
+let streamLogInterval = null;
+let chartUpdateInterval = null;
+
+// Rolling buffer for chart (2 min at ~1Hz)
+const MAX_CHART_POINTS = 120;
+let chartData = [];
+let streamChart = null;
+
+function initChart() {
+    const canvas = document.getElementById('stream-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    streamChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Watts',
+                    data: [],
+                    borderColor: '#48bb78',
+                    backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3,
+                    fill: true,
+                    yAxisID: 'y_watts',
+                },
+                {
+                    label: 'Cadence (RPM)',
+                    data: [],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3,
+                    fill: true,
+                    yAxisID: 'y_cadence',
+                },
+                {
+                    label: 'Trigger',
+                    data: [],
+                    borderColor: '#f56565',
+                    backgroundColor: 'rgba(245, 101, 101, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3,
+                    fill: true,
+                    yAxisID: 'y_trigger',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 200 },
+            interaction: {
+                intersect: false,
+                mode: 'index',
+            },
+            scales: {
+                x: {
+                    display: true,
+                    ticks: {
+                        maxTicksLimit: 10,
+                        color: '#888',
+                    },
+                    grid: {
+                        color: 'rgba(255,255,255,0.05)',
+                    },
+                },
+                y_watts: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Watts',
+                        color: '#48bb78',
+                    },
+                    min: 0,
+                    max: 400,
+                    grid: {
+                        color: 'rgba(255,255,255,0.05)',
+                    },
+                    ticks: {
+                        color: '#48bb78',
+                    },
+                },
+                y_cadence: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'RPM',
+                        color: '#667eea',
+                    },
+                    min: 0,
+                    max: 150,
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        color: '#667eea',
+                    },
+                },
+                y_trigger: {
+                    type: 'linear',
+                    display: false,
+                    min: 0,
+                    max: 255,
+                },
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#ccc',
+                        boxWidth: 12,
+                        padding: 16,
+                    },
+                },
+            },
+        },
+    });
+}
+
+function updateChart(watts, cadence, trigger) {
+    if (!streamChart) return;
+
+    const now = new Date();
+    const label = now.toLocaleTimeString();
+
+    chartData.push({ label, watts, cadence, trigger });
+    if (chartData.length > MAX_CHART_POINTS) {
+        chartData.shift();
+    }
+
+    streamChart.data.labels = chartData.map(d => d.label);
+    streamChart.data.datasets[0].data = chartData.map(d => d.watts);
+    streamChart.data.datasets[1].data = chartData.map(d => d.cadence);
+    streamChart.data.datasets[2].data = chartData.map(d => d.trigger);
+    streamChart.update('none');
+}
 
 async function pollStreamData() {
     try {
@@ -419,26 +568,69 @@ async function pollStreamData() {
 
         const data = await response.json();
 
+        const watts = data.watts || 0;
+        const cadence = data.cadence || 0;
+        const max_target_watts = 300;
+        const trigger_value = Math.round((Math.min(watts, max_target_watts) / max_target_watts) * 255);
+
         // Update power display
-        document.getElementById('stream-power').textContent = Math.round(data.watts || 0);
+        document.getElementById('stream-power').textContent = Math.round(watts);
         
         // Update cadence display
-        document.getElementById('stream-cadence').textContent = Math.round(data.cadence || 0);
+        document.getElementById('stream-cadence').textContent = Math.round(cadence);
         
         // Calculate and display controller output (0-255 trigger value)
-        const max_target_watts = 300;
-        const trigger_value = Math.round((Math.min(data.watts || 0, max_target_watts) / max_target_watts) * 255);
         document.getElementById('stream-trigger').textContent = trigger_value;
+
+        // Feed chart
+        updateChart(watts, cadence, trigger_value);
     } catch (error) {
         console.error('Error polling stream data:', error);
+    }
+}
+
+async function pollStreamLog() {
+    try {
+        const response = await fetch('/api/stream-log', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const entries = await response.json();
+        const container = document.getElementById('stream-log-container');
+
+        if (!entries || entries.length === 0) {
+            container.innerHTML = '<p class="stream-log-empty">No messages yet. Start streaming to see data.</p>';
+            return;
+        }
+
+        let html = '';
+        entries.slice(-50).reverse().forEach(entry => {
+            const t = new Date(entry.time * 1000);
+            const timeStr = t.toLocaleTimeString();
+            html += `<div class="stream-log-entry">
+                <span class="log-time">${timeStr}</span>
+                <span class="log-watts">${entry.watts}W</span>
+                <span class="log-cadence">${entry.cadence} RPM</span>
+                <span class="log-trigger">${Math.round((Math.min(entry.watts, 300) / 300) * 255)}/255</span>
+            </div>`;
+        });
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error polling stream log:', error);
     }
 }
 
 function startStreamDataPolling() {
     // Poll every 200ms for smooth updates
     streamDataInterval = setInterval(pollStreamData, 200);
+    // Poll log every 1s
+    streamLogInterval = setInterval(pollStreamLog, 1000);
     // Do an initial poll right away
     pollStreamData();
+    pollStreamLog();
 }
 
 function stopStreamDataPolling() {
@@ -446,10 +638,22 @@ function stopStreamDataPolling() {
         clearInterval(streamDataInterval);
         streamDataInterval = null;
     }
+    if (streamLogInterval) {
+        clearInterval(streamLogInterval);
+        streamLogInterval = null;
+    }
     // Reset display
     document.getElementById('stream-power').textContent = '0';
     document.getElementById('stream-cadence').textContent = '0';
     document.getElementById('stream-trigger').textContent = '0';
+    document.getElementById('stream-log-container').innerHTML = '<p class="stream-log-empty">No messages yet. Start streaming to see data.</p>';
+    // Reset chart
+    chartData = [];
+    if (streamChart) {
+        streamChart.data.labels = [];
+        streamChart.data.datasets.forEach(ds => ds.data = []);
+        streamChart.update('none');
+    }
 }
 
 // (Removed duplicate overrides and global click handler)
@@ -458,4 +662,16 @@ function stopStreamDataPolling() {
 document.addEventListener('DOMContentLoaded', () => {
     checkStatus();
     loadConfig();
+    initChart();
+    // If streaming is already active, start data polling
+    refreshStreamStatus().then(() => {
+        const statusIndicator = document.getElementById('stream-status-indicator');
+        if (statusIndicator && statusIndicator.textContent.includes('Streaming')) {
+            startStreamDataPolling();
+        }
+    });
+    // Keep polling status every 5s to auto-resume on page if streaming starts
+    setInterval(() => {
+        refreshStreamStatus();
+    }, 5000);
 });

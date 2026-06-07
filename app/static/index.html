@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deckdefrance - Tacx Trainer Control</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -87,6 +88,20 @@
                         <span id="stream-trigger" class="stream-data-value">0</span>
                         <span class="stream-data-unit">/255</span>
                     </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Live Chart</h3>
+                <div class="chart-container">
+                    <canvas id="stream-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Stream Message Log</h3>
+                <div id="stream-log-container" class="stream-log">
+                    <p class="stream-log-empty">No messages yet. Start streaming to see data.</p>
                 </div>
             </div>
 
@@ -231,6 +246,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=2"></script>
+    <script src="/static/app.js?v=4"></script>
 </body>
 </html>
