@@ -16,6 +16,7 @@
             <button class="nav-btn active" data-tab="status">Status</button>
             <button class="nav-btn" data-tab="control">Control</button>
             <button class="nav-btn" data-tab="discover">Discover</button>
+            <button class="nav-btn" data-tab="steer">Steer</button>
             <button class="nav-btn" data-tab="config">Configuration</button>
             <button class="nav-btn" data-tab="test">Test Connection</button>
         </nav>
@@ -157,6 +158,23 @@
             </div>
         </div>
 
+        <!-- Steer Tab -->
+        <div id="steer" class="tab-content">
+            <h2>Virtual Steering</h2>
+            <p style="color:#666;margin-bottom:20px;line-height:1.5;">
+                Drag the thumbstick to steer the in-game character. Release to snap back to center.
+            </p>
+            <div class="joystick-area">
+                <div class="joystick-base" id="joystick-base">
+                    <div class="joystick-thumb" id="joystick-thumb"></div>
+                </div>
+                <div class="joystick-coords">
+                    <div>X: <span id="joy-x">0.00</span></div>
+                    <div>Y: <span id="joy-y">0.00</span></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Configuration Tab -->
         <div id="config" class="tab-content">
             <h2>Configuration Parameters</h2>
@@ -277,6 +295,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=8"></script>
+    <script src="/static/app.js?v=12"></script>
 </body>
 </html>

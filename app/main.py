@@ -37,6 +37,11 @@ class MappingRequest(BaseModel):
     resistance: float
 
 
+class JoystickRequest(BaseModel):
+    x: float = 0.0
+    y: float = 0.0
+
+
 class ConfigRequest(BaseModel):
     tacx_mac_address: str | None = None
     max_target_watts: float | None = None
@@ -95,6 +100,19 @@ async def map_trainer(request: MappingRequest):
         "input": request.dict(),
         "mapping": mapping,
     }
+
+
+@app.post("/api/joystick")
+async def set_joystick(request: JoystickRequest):
+    """Set virtual left stick position (-1 to 1 range)."""
+    import uinput
+    x = max(-1.0, min(1.0, request.x))
+    y = max(-1.0, min(1.0, request.y))
+    x_val = int((x + 1.0) / 2.0 * 65535)
+    y_val = int((y + 1.0) / 2.0 * 65535)
+    device.emit(uinput.ABS_X, x_val)
+    device.emit(uinput.ABS_Y, y_val)
+    return {"x": x, "y": y}
 
 
 @app.post("/api/test-trainer")

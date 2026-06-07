@@ -41,6 +41,7 @@ deckdefrance/
 | GET | `/api/config` | Get current config |
 | POST | `/api/config` | Save config (partial update, `exclude_none`) |
 | POST | `/api/map` | Test mapping (power, cadence, resistance → buttons/gear/mode) |
+| POST | `/api/joystick` | Set left stick position (`{ x, y }` in -1 to 1 range) |
 | POST | `/api/test-trainer` | Test BLE connection to configured MAC |
 | POST | `/api/discover-tacx` | BLE scan for Tacx trainers (5s timeout) |
 | POST | `/api/discover-all` | BLE scan for all devices |
@@ -138,6 +139,17 @@ Polling only runs while streaming is active (started/stopped in `startStreamData
 - **Stream log**: every 1s via `/api/stream-log`
 - **Status poll**: every 5s via `/api/stream-status`
 - **Chart**: rolling 120-point buffer (~2 min), 3 lines (Watts green, Cadence blue, Trigger red)
+
+## Virtual Steering Tab
+
+The **Steer** tab provides a draggable virtual joystick widget that maps to the left stick (ABS_X/ABS_Y) on the uinput device.
+
+- Widget is a 200px circular base with a 70px purple thumb, built with divs + CSS
+- Mouse and touch events track displacement from center, clamped to base radius
+- X/Y values (-1 to 1) are sent to `POST /api/joystick` with 30ms throttle
+- Backend maps -1..1 to 0..65535 and emits `uinput.ABS_X` + `uinput.ABS_Y`
+- Works independently of BLE streaming — no trainer required
+- Releases snap back to center and send (0, 0)
 
 ## Running
 

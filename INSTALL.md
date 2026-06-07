@@ -143,7 +143,34 @@ The Tacx Virtual Gamepad is configured as an Xbox 360 controller (`vendor=0x045e
 
 ---
 
-## 10. Troubleshooting
+## 10. Virtual Steering
+
+The **Steer** tab provides a draggable virtual joystick that controls the in-game character's left stick (steering).
+
+1. Navigate to the **Steer** tab in the web UI
+2. Drag the purple thumbstick with your mouse or touch
+3. X and Y values (-1 to 1) are sent to the left stick of the Tacx Virtual Gamepad
+4. Release to snap back to center
+5. Works independently of BLE streaming — no trainer connection required
+
+The joystick sends updates at ~30fps via `POST /api/joystick` with `{ x, y }` in -1 to 1 range, mapped to 0–65535 on the uinput device.
+
+### Remote Steering from a Phone or Tablet
+
+Open the web UI on any device on the same network:
+
+1. Find the Steam Deck's IP address:
+   ```bash
+   ip addr show | grep "inet " | grep -v 127.0.0.1
+   ```
+2. On your phone or tablet, open a browser to `http://<steam-deck-ip>:8000/`
+3. Go to the **Steer** tab and drag the virtual joystick to control the game
+
+This works over Wi-Fi — no trainer or BLE connection needed. The joystick input goes directly to the uinput device on the Steam Deck.
+
+---
+
+## 11. Troubleshooting
 
 | Problem | Fix |
 |---------|-----|

@@ -805,6 +805,105 @@ function stopStreamDataPolling() {
 
 // (Removed duplicate overrides and global click handler)
 
+// Virtual Joystick
+(function () {
+    const base = document.getElementById('joystick-base');
+    const thumb = document.getElementById('joystick-thumb');
+    const joyX = document.getElementById('joy-x');
+    const joyY = document.getElementById('joy-y');
+
+    if (!base || !thumb) return;
+
+    let RADIUS = 0;
+    let active = false;
+    let currentX = 0, currentY = 0;
+    let lastSend = 0;
+    const THROTTLE_MS = 30;
+
+    function getRadius() {
+        if (RADIUS > 0) return RADIUS;
+        RADIUS = (base.offsetWidth / 2) - (thumb.offsetWidth / 2);
+        if (RADIUS <= 0) RADIUS = 65; // fallback: (200/2) - (70/2)
+        return RADIUS;
+    }
+
+    function coordsFromEvent(e) {
+        const rect = base.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { dx: clientX - cx, dy: clientY - cy };
+    }
+
+    function updateThumb(dx, dy) {
+        const r = getRadius();
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        let clampedX = dx, clampedY = dy;
+        if (dist > r) {
+            clampedX = (dx / dist) * r;
+            clampedY = (dy / dist) * r;
+        }
+        thumb.style.transform = `translate(calc(-50% + ${clampedX}px), calc(-50% + ${clampedY}px))`;
+        currentX = +(clampedX / r).toFixed(2);
+        currentY = +(clampedY / r).toFixed(2);
+        if (joyX) joyX.textContent = currentX.toFixed(2);
+        if (joyY) joyY.textContent = currentY.toFixed(2);
+    }
+
+    function sendPosition() {
+        const now = Date.now();
+        if (now - lastSend < THROTTLE_MS) return;
+        lastSend = now;
+        fetch('/api/joystick', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ x: currentX, y: currentY }),
+        }).catch(() => {});
+    }
+
+    function resetJoystick() {
+        active = false;
+        thumb.style.transform = 'translate(-50%, -50%)';
+        currentX = 0;
+        currentY = 0;
+        if (joyX) joyX.textContent = '0.00';
+        if (joyY) joyY.textContent = '0.00';
+        sendPosition();
+    }
+
+    function onStart(e) {
+        e.preventDefault();
+        active = true;
+        const { dx, dy } = coordsFromEvent(e);
+        updateThumb(dx, dy);
+        sendPosition();
+    }
+
+    function onMove(e) {
+        if (!active) return;
+        const { dx, dy } = coordsFromEvent(e);
+        updateThumb(dx, dy);
+        sendPosition();
+    }
+
+    function onEnd(e) {
+        if (!active) return;
+        resetJoystick();
+    }
+
+    // Mouse events
+    base.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+
+    // Touch events
+    base.addEventListener('touchstart', onStart, { passive: false });
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd, { passive: false });
+    document.addEventListener('touchcancel', onEnd, { passive: false });
+})();
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     refreshStatusTab();
