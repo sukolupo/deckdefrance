@@ -18,8 +18,10 @@ _AXIS_DESCRIPTORS: Dict[str, tuple] = {
     "left_stick_y":  uinput.ABS_Y + (0, 65535, 0, 0),
     "right_stick_x": uinput.ABS_RX + (0, 65535, 0, 0),
     "right_stick_y": uinput.ABS_RY + (0, 65535, 0, 0),
-    "right_trigger": uinput.ABS_Z + (0, 255, 0, 0),
-    "left_trigger":  uinput.ABS_RZ + (0, 255, 0, 0),
+    # Note: on Linux, SDL/games swap ABS_Z and ABS_RZ.
+    # ABS_Z is read as left trigger, ABS_RZ as right trigger.
+    "right_trigger": uinput.ABS_RZ + (0, 255, 0, 0),
+    "left_trigger":  uinput.ABS_Z + (0, 255, 0, 0),
 }
 
 _BUTTON_CODES: Dict[str, tuple] = {
@@ -35,8 +37,9 @@ _EMIT_EVTS: Dict[str, tuple] = {
     "left_stick_y":  uinput.ABS_Y,
     "right_stick_x": uinput.ABS_RX,
     "right_stick_y": uinput.ABS_RY,
-    "right_trigger": uinput.ABS_Z,
-    "left_trigger":  uinput.ABS_RZ,
+    # Swapped to match SDL/game expectations (ABS_RZ = right trigger)
+    "right_trigger": uinput.ABS_RZ,
+    "left_trigger":  uinput.ABS_Z,
     **_BUTTON_CODES,
 }
 
