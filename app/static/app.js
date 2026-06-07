@@ -23,6 +23,18 @@ function switchTab(tabName) {
     // Activate selected button
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 
+    // Auto-refresh status tab when active
+    if (tabName === 'status') {
+        refreshStatusTab();
+        if (statusTabInterval) clearInterval(statusTabInterval);
+        statusTabInterval = setInterval(refreshStatusTab, 3000);
+    } else {
+        if (statusTabInterval) {
+            clearInterval(statusTabInterval);
+            statusTabInterval = null;
+        }
+    }
+
     // Load config when switching to config tab
     if (tabName === 'config') {
         loadConfig();
@@ -147,16 +159,38 @@ document.getElementById('config-form').addEventListener('submit', async (e) => {
     }
 });
 
-// Status Check
-async function checkStatus() {
+// Status Tab
+async function refreshStatusTab() {
     try {
-        const response = await fetch('/');
-        const data = await response.json();
-        document.getElementById('service-status').textContent = data.status === 'ok' ? '✓ Running' : '✗ Error';
+        const [health, stream] = await Promise.all([
+            fetch('/api/health').then(r => r.json()),
+            fetch('/api/stream-status').then(r => r.json()),
+        ]);
+
+        document.getElementById('status-service').textContent = health.status === 'ok' ? '✓ Running' : '✗ Error';
+        document.getElementById('status-service').className = 'status-value ' + (health.status === 'ok' ? 'status-ok' : 'status-err');
+
+        const streamingEl = document.getElementById('status-streaming');
+        if (health.streaming) {
+            streamingEl.textContent = '✓ Active';
+            streamingEl.className = 'status-value status-ok';
+        } else {
+            streamingEl.textContent = '✗ Stopped';
+            streamingEl.className = 'status-value status-err';
+        }
+
+        document.getElementById('status-mac').textContent = health.trainer_configured ? 'Configured' : 'Not set';
+        document.getElementById('status-mac').className = 'status-value ' + (health.trainer_configured ? 'status-ok' : 'status-muted');
+
+        document.getElementById('status-message').textContent = stream.message || '—';
     } catch (error) {
-        document.getElementById('service-status').textContent = '✗ Unreachable';
+        console.error('Error refreshing status tab:', error);
+        document.getElementById('status-service').textContent = '✗ Unreachable';
+        document.getElementById('status-service').className = 'status-value status-err';
     }
 }
+
+let statusTabInterval = null;
 
 // Test Mapping
 async function testMapping() {
@@ -739,7 +773,8 @@ function stopStreamDataPolling() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    checkStatus();
+    refreshStatusTab();
+    statusTabInterval = setInterval(refreshStatusTab, 3000);
     loadConfig();
     initChart();
     // If streaming is already active, start data polling (which also starts status polling)

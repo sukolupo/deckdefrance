@@ -47,6 +47,17 @@ class ConfigRequest(BaseModel):
     mappings: list[dict] | None = None
 
 
+@app.get("/api/health")
+async def health():
+    """Health check endpoint."""
+    config = get_config()
+    return {
+        "status": "ok",
+        "streaming": streaming_active,
+        "trainer_configured": config.get("tacx_mac_address", "XX:XX:XX:XX:XX:XX") != "XX:XX:XX:XX:XX:XX",
+    }
+
+
 @app.get("/")
 async def root():
     """Serve the web UI."""

@@ -108,8 +108,19 @@ h1 {
 }
 
 .status-value {
-    color: #667eea;
     font-weight: 500;
+}
+
+.status-value.status-ok {
+    color: #38a169;
+}
+
+.status-value.status-err {
+    color: #e53e3e;
+}
+
+.status-value.status-muted {
+    color: #999;
 }
 
 /* Forms */

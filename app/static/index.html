@@ -26,18 +26,22 @@
             <div class="status-card">
                 <div class="status-item">
                     <span class="status-label">Service:</span>
-                    <span id="service-status" class="status-value">Checking...</span>
+                    <span id="status-service" class="status-value status-ok">✓ Running</span>
                 </div>
                 <div class="status-item">
-                    <span class="status-label">Trainer Connected:</span>
-                    <span id="trainer-status" class="status-value">Unknown</span>
+                    <span class="status-label">Streaming:</span>
+                    <span id="status-streaming" class="status-value">Checking...</span>
                 </div>
                 <div class="status-item">
-                    <span class="status-label">Configuration Loaded:</span>
-                    <span id="config-status" class="status-value">Yes</span>
+                    <span class="status-label">Trainer MAC:</span>
+                    <span id="status-mac" class="status-value">Checking...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Stream Message:</span>
+                    <span id="status-message" class="status-value">—</span>
                 </div>
             </div>
-            <button class="btn btn-refresh" onclick="checkStatus()">Refresh Status</button>
+            <button class="btn btn-refresh" onclick="refreshStatusTab()">Refresh Status</button>
         </div>
 
         <!-- Control Tab -->
@@ -266,6 +270,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=6"></script>
+    <script src="/static/app.js?v=7"></script>
 </body>
 </html>
