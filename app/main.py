@@ -230,17 +230,34 @@ async def start_streaming():
     try:
         streaming_task = asyncio.create_task(stream_trainer_data(mac_address))
         await asyncio.sleep(0.5)  # Give it a moment to connect
-        
+
+        # If the background task set streaming_active, we're streaming
         if streaming_active:
             return {
                 "status": "streaming",
                 "message": f"Streaming started on {mac_address}",
             }
-        else:
-            return {
-                "status": "error",
-                "message": streaming_message,
-            }
+
+        # If the task finished quickly, surface its exception
+        if streaming_task.done():
+            exc = None
+            try:
+                exc = streaming_task.exception()
+            except Exception as _:
+                exc = None
+
+            if exc:
+                msg = str(exc) or repr(exc)
+                return {
+                    "status": "error",
+                    "message": f"Background task failed: {msg}",
+                }
+
+        # Fallback to any streaming_message set by the worker
+        return {
+            "status": "error",
+            "message": streaming_message or "Failed to start streaming (no additional details)",
+        }
     except Exception as e:
         streaming_active = False
         return {

@@ -300,6 +300,7 @@ function selectDevice(macAddress, deviceName) {
 
 // Streaming Control
 async function startStreaming() {
+    console.log('startStreaming() invoked');
     const startBtn = document.getElementById('stream-start-btn');
     const stopBtn = document.getElementById('stream-stop-btn');
     const statusIndicator = document.getElementById('stream-status-indicator');
@@ -451,21 +452,7 @@ function stopStreamDataPolling() {
     document.getElementById('stream-trigger').textContent = '0';
 }
 
-// Override startStreaming to include data polling
-const originalStartStreaming = startStreaming;
-async function startStreaming() {
-    const result = await originalStartStreaming();
-    startStreamDataPolling();
-    return result;
-}
-
-// Override stopStreaming to stop data polling
-const originalStopStreaming = stopStreaming;
-async function stopStreaming() {
-    stopStreamDataPolling();
-    const result = await originalStopStreaming();
-    return result;
-}
+// (Removed duplicate overrides and global click handler)
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
