@@ -174,7 +174,12 @@ async def stream_trainer_data(mac_address: str):
             streaming_active = True
             
             trainer = CyclingPowerService(client)
-            
+
+            # Read config once at stream start
+            cfg = get_config()
+            mappings = cfg.get("mappings", [])
+            max_watts = cfg.get("max_target_watts", 300)
+
             def power_handler(data):
                 """Handle incoming power data from trainer (synchronous callback)."""
                 global last_power_data, streaming_log
@@ -195,10 +200,6 @@ async def stream_trainer_data(mac_address: str):
                         "cadence": cadence,
                     })
                     
-                    # Apply user-configured mappings
-                    cfg = get_config()
-                    mappings = cfg.get("mappings", [])
-                    max_watts = cfg.get("max_target_watts", 300)
                     apply_mappings(mappings, watts, cadence, 0, max_watts)
                 except Exception as e:
                     print(f"Error in power handler: {e}")
