@@ -111,17 +111,30 @@ pkill -f "uvicorn app.main:app"
 
 The Tacx Virtual Gamepad is configured as an Xbox 360 controller (`vendor=0x045e, product=0x028e`). After the app is running, Steam should detect it.
 
+> **Note:** Some games (e.g. Tour de France) only accept input from the first controller (js0). Since the Tacx pad is a separate device, the game won't see inputs from both the Steam Deck and the Tacx pad unless you configure **Additional Controllers** in Steam.
+
 ### In Steam Big Picture Mode:
 
 1. Open **Steam Big Picture** (or Desktop mode with controller config)
 2. Launch your game
 3. Press the **Steam button** → **Controller Settings** → select the game's config
-4. Look for **"Additional Controllers"** near the bottom of the config screen
-5. You should see **Tacx Virtual Gamepad** listed as an Xbox 360 controller
-6. Bind the same actions to **all three devices** (Deck, Xbox pad, Tacx pad)
-   - The Tacx pad's right trigger (ABS_RZ) maps to `RT` / right trigger
-   - Future: BTN_A/B are available for button mapping
-7. Steam merges inputs from all three, so pressing RT on *any* device triggers the same action
+4. Near the bottom of the config screen you'll see **"Additional Controllers"** — click it
+5. You should see **Tacx Virtual Gamepad** listed alongside your Steam Deck controller
+6. Bind the same game actions to **both devices**:
+   - Steam Deck → your usual button/joystick bindings
+   - Tacx pad → bind its right trigger (ABS_RZ) to `RT` and any virtual buttons (A/B/X/Y) to their game actions
+7. Steam merges inputs from all configured controllers — pressing RT on the Tacx pad or on the Deck will trigger the same action in-game
+
+### Steam Controller Template
+
+A pre-made template `controller_tacx_gamepad.vdf` is included in the repo. It pre-maps the Tacx pad's right trigger (ABS_RZ), left trigger (ABS_Z), left stick, face buttons, Select, and Start to standard gamepad actions.
+
+To install it:
+```bash
+cp controller_tacx_gamepad.vdf ~/.steam/steam/controller_base/templates/
+```
+
+After installing, open any game's controller config in Steam Big Picture and you'll see **"Tacx Gamepad"** in the templates list. Select it for the Tacx pad when setting up **Additional Controllers** — bindings are pre-filled.
 
 ### If Steam doesn't see the Tacx pad:
 
@@ -191,6 +204,7 @@ deckdefrance/
 ├── INSTALL.md              ← this file
 ├── AGENTS.md               ← project overview (for AI assistants)
 ├── start.sh                ← convenience startup script
+├── controller_tacx_gamepad.vdf ← Steam Input template for Tacx pad
 ├── 99-tacx-gamepad.rules   ← udev rule for Steam detection
 ├── config.json             ← persistent config (MAC, thresholds)
 ├── requirements.txt        ← Python dependencies
