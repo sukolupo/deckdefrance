@@ -75,13 +75,28 @@ Tacx Trainer (BLE)
 ```json
 {
   "tacx_mac_address": "F0:C5:70:96:A9:3B",
-  "max_target_watts": 300,
-  "cadence_threshold": 95,
-  "power_threshold_race": 150,
-  "power_threshold_button_a": 250,
-  "gear_multiplier": 2.0
+  "max_target_watts": 250,
+  "cadence_threshold": 90,
+  "power_threshold_race": 120,
+  "power_threshold_button_a": 200,
+  "gear_multiplier": 2.0,
+  "mappings": [
+    { "source": "power", "target": "right_trigger" },
+    { "source": "power", "target": "left_stick_y" }
+  ]
 }
 ```
+
+### FTP Presets
+
+Presets are available via `GET /api/config/presets` and in the Config UI. Based on Functional Threshold Power (avg watts over 1hr):
+
+| Preset | FTP | Max Trigger | Race Mode | Button A | Cadence |
+|--------|-----|-------------|-----------|----------|---------|
+| Beginner | ~75W | 150W | 90W | 130W | 80 RPM |
+| Average | ~125W | 250W | 120W | 200W | 90 RPM |
+| Competitive | ~200W | 350W | 180W | 280W | 95 RPM |
+| Pro | ~300W | 500W | 250W | 400W | 100 RPM |
 
 ## Mapping Logic (mapper.py)
 

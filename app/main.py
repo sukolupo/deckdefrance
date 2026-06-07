@@ -10,7 +10,7 @@ from collections import deque
 from bleak import BleakClient
 from pycycling.cycling_power_service import CyclingPowerService
 from .mapper import map_tacx_to_controller, apply_mappings, device
-from .config import get_config, update_config
+from .config import get_config, update_config, FTP_PRESETS
 from .discovery import discover_tacx_trainers, discover_all_devices
 
 app = FastAPI(title="deckdefrance", version="0.1.0")
@@ -45,6 +45,12 @@ class ConfigRequest(BaseModel):
     power_threshold_button_a: float | None = None
     gear_multiplier: float | None = None
     mappings: list[dict] | None = None
+
+
+@app.get("/api/config/presets")
+async def get_presets():
+    """Get FTP-based power preset recommendations."""
+    return FTP_PRESETS
 
 
 @app.get("/api/health")

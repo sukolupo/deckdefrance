@@ -1,0 +1,91 @@
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started parent process [343686]
+INFO:     Started server process [343689]
+INFO:     Started server process [343690]
+INFO:     Waiting for application startup.
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Application startup complete.
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-status HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-status HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45854 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-status HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45858 - "GET /api/stream-log HTTP/1.1" 200 OK
+INFO:     192.168.1.185:45842 - "GET /api/stream-data HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [343690]
+INFO:     Finished server process [343689]
+INFO:     Stopping parent process [343686]

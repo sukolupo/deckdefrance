@@ -581,6 +581,46 @@ h1 {
     position: relative;
 }
 
+/* Preset Cards */
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.preset-card {
+    background: #f8f9fa;
+    border: 2px solid #eee;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.preset-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    transform: translateY(-1px);
+}
+
+.preset-name {
+    font-weight: 700;
+    color: #333;
+    font-size: 0.95em;
+    margin-bottom: 6px;
+}
+
+.preset-detail {
+    font-size: 0.82em;
+    color: #666;
+    line-height: 1.6;
+}
+
+.preset-detail strong {
+    color: #667eea;
+}
+
 /* Mapping Rows */
 .mapping-row {
     display: flex;

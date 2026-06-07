@@ -38,7 +38,41 @@ function switchTab(tabName) {
     // Load config when switching to config tab
     if (tabName === 'config') {
         loadConfig();
+        loadPresets();
     }
+}
+
+// FTP Presets
+async function loadPresets() {
+    try {
+        const res = await fetch('/api/config/presets');
+        const presets = await res.json();
+        const container = document.getElementById('preset-container');
+        container.innerHTML = '';
+        Object.entries(presets).forEach(([key, preset]) => {
+            const card = document.createElement('div');
+            card.className = 'preset-card';
+            card.innerHTML = `
+                <div class="preset-name">${preset.label}</div>
+                <div class="preset-detail">Max trigger: <strong>${preset.max_target_watts}W</strong></div>
+                <div class="preset-detail">Race mode: <strong>${preset.power_threshold_race}W</strong></div>
+                <div class="preset-detail">Button A: <strong>${preset.power_threshold_button_a}W</strong></div>
+                <div class="preset-detail">Cadence: <strong>${preset.cadence_threshold} RPM</strong></div>
+            `;
+            card.addEventListener('click', () => applyPreset(preset));
+            container.appendChild(card);
+        });
+    } catch (e) {
+        console.error('Error loading presets:', e);
+    }
+}
+
+function applyPreset(preset) {
+    document.getElementById('max-watts').value = preset.max_target_watts;
+    document.getElementById('cadence-threshold').value = preset.cadence_threshold;
+    document.getElementById('power-race').value = preset.power_threshold_race;
+    document.getElementById('power-button-a').value = preset.power_threshold_button_a;
+    showMessage('config-message', `Preset applied — save to persist`, 'success');
 }
 
 // Configuration Management
