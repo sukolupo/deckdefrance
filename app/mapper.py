@@ -10,12 +10,14 @@ TACX_MAC_ADDRESS = "XX:XX:XX:XX:XX:XX"  # Change to your Tacx MAC
 # uinput event codes are (type, code) tuples, e.g. (3, 2) for ABS_Z
 # For device creation, axes need a range tuple appended: (type, code, min, max, fuzz, flat)
 # For emit(), only the base (type, code) is used.
+# Triggers: 0-255 range (standard for Xbox 360 triggers)
+# Sticks: 0-65535 range (standard for Xbox 360 analog sticks)
 
 _AXIS_DESCRIPTORS: Dict[str, tuple] = {
-    "left_stick_x":  uinput.ABS_X + (0, 255, 0, 0),
-    "left_stick_y":  uinput.ABS_Y + (0, 255, 0, 0),
-    "right_stick_x": uinput.ABS_RX + (0, 255, 0, 0),
-    "right_stick_y": uinput.ABS_RY + (0, 255, 0, 0),
+    "left_stick_x":  uinput.ABS_X + (0, 65535, 0, 0),
+    "left_stick_y":  uinput.ABS_Y + (0, 65535, 0, 0),
+    "right_stick_x": uinput.ABS_RX + (0, 65535, 0, 0),
+    "right_stick_y": uinput.ABS_RY + (0, 65535, 0, 0),
     "right_trigger": uinput.ABS_Z + (0, 255, 0, 0),
     "left_trigger":  uinput.ABS_RZ + (0, 255, 0, 0),
 }
@@ -76,24 +78,27 @@ _SOURCE_GETTERS = {
 }
 
 
-def _scale(value: float, src_max: float, tgt_min: int, tgt_max: int) -> int:
-    """Scale a source value (0–src_max) to a target range (tgt_min–tgt_max)."""
-    clamped = max(0.0, min(value, src_max))
-    if src_max == 0:
-        return tgt_min
-    return int(tgt_min + (clamped / src_max) * (tgt_max - tgt_min))
+# Trigger and stick ranges used for scaling
+_TRIGGER_RANGE = 255
+_STICK_RANGE = 65535
+_STICK_CENTER = _STICK_RANGE // 2  # 32768
 
 
-def _scale_centered(value: float, src_max: float, center: int = 128, max_offset: int = 128) -> int:
-    """Scale source value so 0→center and src_max→center-offset.
-    
-    For Y-axes: 0W = stick at rest (center), full power = stick pushed up.
-    """
+def _scale(value: float, src_max: float, tgt_max: int) -> int:
+    """Scale source value from 0–src_max to 0–tgt_max."""
     clamped = max(0.0, min(value, src_max))
     if src_max == 0:
-        return center
-    offset = int((clamped / src_max) * max_offset)
-    return center - offset
+        return 0
+    return int((clamped / src_max) * tgt_max)
+
+
+def _scale_stick_y(value: float, src_max: float) -> int:
+    """Scale source value for Y-axis stick: 0→center, src_max→full up."""
+    clamped = max(0.0, min(value, src_max))
+    if src_max == 0:
+        return _STICK_CENTER
+    offset = int((clamped / src_max) * _STICK_CENTER)
+    return _STICK_CENTER - offset
 
 
 def apply_mappings(mappings: List[Dict[str, Any]], watts: float, cadence: float, resistance: float, max_watts: float):
@@ -126,11 +131,11 @@ def apply_mappings(mappings: List[Dict[str, Any]], watts: float, cadence: float,
         elif target in _EMIT_EVTS:
             src_max = max_watts if source == "power" else (200 if source == "cadence" else 10)
             if target in ("left_stick_y", "right_stick_y"):
-                # Y-axes: center at 128, push up as power increases
-                scaled = _scale_centered(value, src_max, 128, 128)
+                scaled = _scale_stick_y(value, src_max)
+            elif target in ("left_stick_x", "right_stick_x"):
+                scaled = _scale(value, src_max, _STICK_RANGE)
             else:
-                # Other axes: 0→255 linear
-                scaled = _scale(value, src_max, 0, 255)
+                scaled = _scale(value, src_max, _TRIGGER_RANGE)
             device.emit(_EMIT_EVTS[target], scaled)
 
 
