@@ -412,7 +412,7 @@ async function refreshStreamStatus() {
 // Stream Data Polling
 let streamDataInterval = null;
 let streamLogInterval = null;
-let chartUpdateInterval = null;
+let statusPollInterval = null;
 
 // Rolling buffer for chart (2 min at ~1Hz)
 const MAX_CHART_POINTS = 120;
@@ -628,6 +628,8 @@ function startStreamDataPolling() {
     streamDataInterval = setInterval(pollStreamData, 200);
     // Poll log every 1s
     streamLogInterval = setInterval(pollStreamLog, 1000);
+    // Check status every 5s while streaming
+    statusPollInterval = setInterval(refreshStreamStatus, 5000);
     // Do an initial poll right away
     pollStreamData();
     pollStreamLog();
@@ -641,6 +643,10 @@ function stopStreamDataPolling() {
     if (streamLogInterval) {
         clearInterval(streamLogInterval);
         streamLogInterval = null;
+    }
+    if (statusPollInterval) {
+        clearInterval(statusPollInterval);
+        statusPollInterval = null;
     }
     // Reset display
     document.getElementById('stream-power').textContent = '0';
@@ -663,15 +669,11 @@ document.addEventListener('DOMContentLoaded', () => {
     checkStatus();
     loadConfig();
     initChart();
-    // If streaming is already active, start data polling
+    // If streaming is already active, start data polling (which also starts status polling)
     refreshStreamStatus().then(() => {
         const statusIndicator = document.getElementById('stream-status-indicator');
         if (statusIndicator && statusIndicator.textContent.includes('Streaming')) {
             startStreamDataPolling();
         }
     });
-    // Keep polling status every 5s to auto-resume on page if streaming starts
-    setInterval(() => {
-        refreshStreamStatus();
-    }, 5000);
 });
