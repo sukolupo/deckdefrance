@@ -851,9 +851,9 @@ function stopStreamDataPolling() {
         if (joyY) joyY.textContent = currentY.toFixed(2);
     }
 
-    function sendPosition() {
+    function sendPosition(force) {
         const now = Date.now();
-        if (now - lastSend < THROTTLE_MS) return;
+        if (!force && now - lastSend < THROTTLE_MS) return;
         lastSend = now;
         fetch('/api/joystick', {
             method: 'POST',
@@ -869,7 +869,7 @@ function stopStreamDataPolling() {
         currentY = 0;
         if (joyX) joyX.textContent = '0.00';
         if (joyY) joyY.textContent = '0.00';
-        sendPosition();
+        sendPosition(true);
     }
 
     function onStart(e) {
