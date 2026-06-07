@@ -84,11 +84,23 @@ def _scale(value: float, src_max: float, tgt_min: int, tgt_max: int) -> int:
     return int(tgt_min + (clamped / src_max) * (tgt_max - tgt_min))
 
 
+def _scale_centered(value: float, src_max: float, center: int = 128, max_offset: int = 128) -> int:
+    """Scale source value so 0→center and src_max→center-offset.
+    
+    For Y-axes: 0W = stick at rest (center), full power = stick pushed up.
+    """
+    clamped = max(0.0, min(value, src_max))
+    if src_max == 0:
+        return center
+    offset = int((clamped / src_max) * max_offset)
+    return center - offset
+
+
 def apply_mappings(mappings: List[Dict[str, Any]], watts: float, cadence: float, resistance: float, max_watts: float):
     """Apply a list of mapping rules to the uinput device.
     
     Each mapping: { "source": "power"|"cadence"|"resistance", "target": "<target_name>" }
-    Optional: "threshold" for buttons, "invert" for axes.
+    Optional: "threshold" for buttons.
     """
     global _last_button_states
 
@@ -113,12 +125,12 @@ def apply_mappings(mappings: List[Dict[str, Any]], watts: float, cadence: float,
                 _last_button_states[target] = pressed
         elif target in _EMIT_EVTS:
             src_max = max_watts if source == "power" else (200 if source == "cadence" else 10)
-            invert = mapping.get("invert", target in ("left_stick_y", "right_stick_y"))
-            if invert:
-                tgt_min, tgt_max = 255, 0
+            if target in ("left_stick_y", "right_stick_y"):
+                # Y-axes: center at 128, push up as power increases
+                scaled = _scale_centered(value, src_max, 128, 128)
             else:
-                tgt_min, tgt_max = 0, 255
-            scaled = _scale(value, src_max, tgt_min, tgt_max)
+                # Other axes: 0→255 linear
+                scaled = _scale(value, src_max, 0, 255)
             device.emit(_EMIT_EVTS[target], scaled)
 
 
