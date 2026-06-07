@@ -9,9 +9,10 @@ from collections import deque
 
 from bleak import BleakClient
 from pycycling.cycling_power_service import CyclingPowerService
-from .mapper import map_tacx_to_controller, apply_mappings, device
+from .mapper import map_tacx_to_controller, apply_mappings, device, _BUTTON_CODES
 from .config import get_config, update_config, FTP_PRESETS
 from .discovery import discover_tacx_trainers, discover_all_devices
+import uinput
 
 app = FastAPI(title="deckdefrance", version="0.1.0")
 
@@ -40,6 +41,11 @@ class MappingRequest(BaseModel):
 class JoystickRequest(BaseModel):
     x: float = 0.0
     y: float = 0.0
+
+
+class ButtonRequest(BaseModel):
+    button: str
+    pressed: bool
 
 
 class ConfigRequest(BaseModel):
@@ -105,7 +111,6 @@ async def map_trainer(request: MappingRequest):
 @app.post("/api/joystick")
 async def set_joystick(request: JoystickRequest):
     """Set virtual left stick position (-1 to 1 range)."""
-    import uinput
     x = max(-1.0, min(1.0, request.x))
     y = max(-1.0, min(1.0, request.y))
     x_val = int((x + 1.0) / 2.0 * 65535)
@@ -113,6 +118,16 @@ async def set_joystick(request: JoystickRequest):
     device.emit(uinput.ABS_X, x_val)
     device.emit(uinput.ABS_Y, y_val)
     return {"x": x, "y": y}
+
+
+@app.post("/api/button")
+async def press_button(request: ButtonRequest):
+    """Press or release a virtual button on the controller."""
+    code = _BUTTON_CODES.get(request.button)
+    if not code:
+        return {"status": "error", "message": f"Unknown button: {request.button}"}
+    device.emit(code, 1 if request.pressed else 0)
+    return {"status": "ok", "button": request.button, "pressed": request.pressed}
 
 
 @app.post("/api/test-trainer")

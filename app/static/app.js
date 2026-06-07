@@ -904,6 +904,27 @@ function stopStreamDataPolling() {
     document.addEventListener('touchcancel', onEnd, { passive: false });
 })();
 
+// Virtual Buttons
+(function () {
+    function sendButton(btn, pressed) {
+        fetch('/api/button', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ button: btn, pressed }),
+        }).catch(() => {});
+    }
+
+    document.querySelectorAll('[data-btn]').forEach(el => {
+        const btn = el.getAttribute('data-btn');
+        el.addEventListener('mousedown', e => { e.preventDefault(); sendButton(btn, true); });
+        el.addEventListener('mouseup', e => { e.preventDefault(); sendButton(btn, false); });
+        el.addEventListener('mouseleave', e => { sendButton(btn, false); });
+        el.addEventListener('touchstart', e => { e.preventDefault(); sendButton(btn, true); }, { passive: false });
+        el.addEventListener('touchend', e => { e.preventDefault(); sendButton(btn, false); }, { passive: false });
+        el.addEventListener('touchcancel', e => { sendButton(btn, false); });
+    });
+})();
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     refreshStatusTab();

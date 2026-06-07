@@ -664,6 +664,7 @@ h1 {
     align-items: center;
     gap: 30px;
     flex-wrap: wrap;
+    justify-content: center;
 }
 
 .joystick-base {
@@ -710,6 +711,91 @@ h1 {
 .joystick-coords span {
     font-weight: 700;
     color: #667eea;
+}
+
+/* Controller Buttons */
+.controller-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ctrl-mid {
+    gap: 24px;
+}
+
+.ctrl-btn {
+    border: none;
+    border-radius: 50%;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.ctrl-btn:active {
+    transform: scale(0.9);
+}
+
+.ctrl-select, .ctrl-start {
+    width: 60px;
+    height: 30px;
+    border-radius: 6px;
+    font-size: 0.7em;
+    background: #444;
+    color: #ccc;
+    letter-spacing: 0.5px;
+}
+
+.ctrl-guide {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2em;
+    background: #333;
+    color: #888;
+    box-shadow: 0 0 6px rgba(255,255,255,0.1);
+}
+
+.ctrl-diamond {
+    display: grid;
+    grid-template: repeat(3, 44px) / repeat(3, 44px);
+    gap: 0;
+}
+
+.ctrl-dia {
+    width: 44px;
+    height: 44px;
+    font-size: 1em;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.ctrl-y {
+    grid-column: 2; grid-row: 1;
+    background: #ecc94b; color: #744210;
+}
+.ctrl-x {
+    grid-column: 1; grid-row: 2;
+    background: #4299e1; color: #1a365d;
+}
+.ctrl-b {
+    grid-column: 3; grid-row: 2;
+    background: #48bb78; color: #22543d;
+}
+.ctrl-a {
+    grid-column: 2; grid-row: 3;
+    background: #f56565; color: #742a2a;
 }
 
 /* Responsive */
