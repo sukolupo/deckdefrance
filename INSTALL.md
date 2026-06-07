@@ -87,6 +87,12 @@ source .venv/bin/activate
 nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > deckdefrance.log 2>&1 &
 ```
 
+Or use the convenience script (kills any running instance first):
+
+```bash
+./start.sh
+```
+
 ### Access the web UI:
 
 Open `http://localhost:8000/` in a browser.
@@ -113,7 +119,7 @@ The Tacx Virtual Gamepad is configured as an Xbox 360 controller (`vendor=0x045e
 4. Look for **"Additional Controllers"** near the bottom of the config screen
 5. You should see **Tacx Virtual Gamepad** listed as an Xbox 360 controller
 6. Bind the same actions to **all three devices** (Deck, Xbox pad, Tacx pad)
-   - The Tacx pad's right trigger (ABS_Z) maps to `RT` / right trigger
+   - The Tacx pad's right trigger (ABS_RZ) maps to `RT` / right trigger
    - Future: BTN_A/B are available for button mapping
 7. Steam merges inputs from all three, so pressing RT on *any* device triggers the same action
 
@@ -121,7 +127,7 @@ The Tacx Virtual Gamepad is configured as an Xbox 360 controller (`vendor=0x045e
 
 - Restart the deckdefrance app (it creates the device on startup)
 - Restart Steam
-- Run `ls /dev/input/js*` to confirm `js1` (Tacx pad) exists
+- Run `ls /dev/input/js*` to confirm a Tacx pad `js*` exists
 - Run `cat /proc/bus/input/devices | grep -A10 "Tacx Virtual Gamepad"` to verify vendor/product IDs
 
 ---
@@ -133,7 +139,7 @@ The Tacx Virtual Gamepad is configured as an Xbox 360 controller (`vendor=0x045e
 3. Go to the **Config** tab and verify the MAC address
 4. Go to the **Control** tab and click **Start Streaming**
 5. The chart will show live power/cadence data
-6. The ABS_Z (right trigger) output scales 0-255 from 0-300W
+6. The right trigger (ABS_RZ) output scales 0-255 from 0–max_target_watts (default 250W)
 
 ---
 
@@ -142,7 +148,7 @@ The Tacx Virtual Gamepad is configured as an Xbox 360 controller (`vendor=0x045e
 | Problem | Fix |
 |---------|-----|
 | `PermissionError: /dev/uinput` | Not in `input` group — run `sudo usermod -aG input $USER` and re-login |
-| Steam doesn't detect Tacx pad | Restart app, restart Steam, check `/dev/input/js1` exists |
+| Steam doesn't detect Tacx pad | Restart app, restart Steam, check `/dev/input/js*` for Tacx pad |
 | BLE connection fails | Ensure trainer is powered on, Bluetooth is enabled, MAC is correct |
 | `ModuleNotFoundError` | Activate venv: `source .venv/bin/activate` |
 | Port 8000 in use | `pkill -f "uvicorn"` or use `--port 8001` |
@@ -157,6 +163,7 @@ The Tacx Virtual Gamepad is configured as an Xbox 360 controller (`vendor=0x045e
 deckdefrance/
 ├── INSTALL.md              ← this file
 ├── AGENTS.md               ← project overview (for AI assistants)
+├── start.sh                ← convenience startup script
 ├── 99-tacx-gamepad.rules   ← udev rule for Steam detection
 ├── config.json             ← persistent config (MAC, thresholds)
 ├── requirements.txt        ← Python dependencies
