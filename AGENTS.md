@@ -82,7 +82,7 @@ Tacx Trainer (BLE)
   "gear_multiplier": 2.0,
   "mappings": [
     { "source": "power", "target": "right_trigger" },
-    { "source": "power", "target": "left_stick_y" }
+    { "source": "power", "target": "btn_a", "threshold": 200 }
   ]
 }
 ```
@@ -124,7 +124,7 @@ Users define which trainer metrics map to which controller outputs. Each mapping
 ```json
 [
   { "source": "power", "target": "right_trigger" },
-  { "source": "power", "target": "left_stick_y" }
+  { "source": "power", "target": "btn_a", "threshold": 200 }
 ]
 ```
 
