@@ -11,6 +11,10 @@ DEFAULT_CONFIG = {
     "power_threshold_race": 150,
     "power_threshold_button_a": 250,
     "gear_multiplier": 2.0,
+    "mappings": [
+        {"source": "power", "target": "right_trigger"},
+        {"source": "power", "target": "left_stick_y"},
+    ],
 }
 
 

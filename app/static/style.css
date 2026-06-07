@@ -570,6 +570,43 @@ h1 {
     position: relative;
 }
 
+/* Mapping Rows */
+.mapping-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.mapping-row.mapping-header {
+    font-weight: 600;
+    color: #555;
+    font-size: 0.9em;
+    padding: 6px 0;
+    border-bottom: 2px solid #ddd;
+}
+
+.mapping-row select,
+.mapping-row input[type="number"] {
+    padding: 8px 10px;
+    border: 2px solid #eee;
+    border-radius: 6px;
+    font-size: 0.9em;
+    background: white;
+}
+
+.mapping-row select:focus,
+.mapping-row input[type="number"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.mapping-row .mapping-source { width: 110px; }
+.mapping-row .mapping-target { width: 160px; }
+.mapping-row .mapping-threshold { width: 90px; }
+.mapping-row .btn-small { padding: 6px 12px; font-size: 0.85em; }
+
 /* Responsive */
 @media (max-width: 768px) {
     .container {

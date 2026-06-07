@@ -9,10 +9,9 @@ from collections import deque
 
 from bleak import BleakClient
 from pycycling.cycling_power_service import CyclingPowerService
-from .mapper import map_tacx_to_controller, device
+from .mapper import map_tacx_to_controller, apply_mappings, device
 from .config import get_config, update_config
 from .discovery import discover_tacx_trainers, discover_all_devices
-import uinput
 
 app = FastAPI(title="deckdefrance", version="0.1.0")
 
@@ -45,6 +44,7 @@ class ConfigRequest(BaseModel):
     power_threshold_race: float | None = None
     power_threshold_button_a: float | None = None
     gear_multiplier: float | None = None
+    mappings: list[dict] | None = None
 
 
 @app.get("/")
@@ -195,10 +195,11 @@ async def stream_trainer_data(mac_address: str):
                         "cadence": cadence,
                     })
                     
-                    # Emit to controller
-                    max_target_watts = 300
-                    trigger_value = int((min(watts, max_target_watts) / max_target_watts) * 255)
-                    device.emit(uinput.ABS_Z, trigger_value)
+                    # Apply user-configured mappings
+                    cfg = get_config()
+                    mappings = cfg.get("mappings", [])
+                    max_watts = cfg.get("max_target_watts", 300)
+                    apply_mappings(mappings, watts, cadence, 0, max_watts)
                 except Exception as e:
                     print(f"Error in power handler: {e}")
             

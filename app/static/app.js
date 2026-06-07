@@ -41,10 +41,76 @@ async function loadConfig() {
         document.getElementById('power-race').value = config.power_threshold_race || 150;
         document.getElementById('power-button-a').value = config.power_threshold_button_a || 250;
         document.getElementById('gear-multiplier').value = config.gear_multiplier || 2.0;
+        renderMappings(config.mappings || []);
     } catch (error) {
         console.error('Error loading config:', error);
         showMessage('config-message', 'Error loading configuration', 'error');
     }
+}
+
+// Mapping UI
+const SOURCES = ["power", "cadence", "resistance"];
+const TARGETS = [
+    "right_trigger", "left_trigger",
+    "left_stick_x", "left_stick_y",
+    "right_stick_x", "right_stick_y",
+    "btn_a", "btn_b", "btn_x", "btn_y",
+];
+
+function renderMappings(mappings) {
+    const container = document.getElementById('mappings-container');
+    container.querySelectorAll('.mapping-row:not(.mapping-header)').forEach(el => el.remove());
+    mappings.forEach((m, i) => appendMappingRow(container, m, i));
+}
+
+function appendMappingRow(container, mapping, index) {
+    const row = document.createElement('div');
+    row.className = 'mapping-row';
+    row.dataset.index = index;
+
+    const sourceOpts = SOURCES.map(s =>
+        `<option value="${s}"${mapping.source === s ? ' selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+    ).join('');
+
+    const targetOpts = TARGETS.map(t =>
+        `<option value="${t}"${mapping.target === t ? ' selected' : ''}>${t.replace(/_/g, ' ').replace(/(^|\s)\S/g, l => l.toUpperCase())}</option>`
+    ).join('');
+
+    const isBtn = mapping.target && (mapping.target.startsWith('btn_'));
+    const thresholdVal = mapping.threshold || 150;
+
+    row.innerHTML = `
+        <select class="mapping-source">${sourceOpts}</select>
+        <select class="mapping-target">${targetOpts}</select>
+        <input type="number" class="mapping-threshold" value="${thresholdVal}" min="0" max="500" step="5" ${isBtn ? '' : 'style="opacity:0.4;"'}>
+        <button class="btn btn-small btn-danger" onclick="this.closest('.mapping-row').remove()">✕</button>
+    `;
+
+    row.querySelector('.mapping-target').addEventListener('change', function () {
+        const isBtn = this.value.startsWith('btn_');
+        const thresholdInput = row.querySelector('.mapping-threshold');
+        thresholdInput.style.opacity = isBtn ? '1' : '0.4';
+    });
+
+    container.appendChild(row);
+}
+
+function addMappingRow() {
+    const container = document.getElementById('mappings-container');
+    const idx = container.querySelectorAll('.mapping-row:not(.mapping-header)').length;
+    appendMappingRow(container, { source: "power", target: "right_trigger", threshold: 150 }, idx);
+}
+
+function collectMappings() {
+    const rows = document.querySelectorAll('#mappings-container .mapping-row:not(.mapping-header)');
+    return Array.from(rows).map(row => {
+        const source = row.querySelector('.mapping-source').value;
+        const target = row.querySelector('.mapping-target').value;
+        const threshold = parseInt(row.querySelector('.mapping-threshold').value, 10) || 150;
+        return target.startsWith('btn_')
+            ? { source, target, threshold }
+            : { source, target };
+    });
 }
 
 document.getElementById('config-form').addEventListener('submit', async (e) => {
@@ -58,6 +124,7 @@ document.getElementById('config-form').addEventListener('submit', async (e) => {
         power_threshold_race: parseFloat(formData.get('power_threshold_race')),
         power_threshold_button_a: parseFloat(formData.get('power_threshold_button_a')),
         gear_multiplier: parseFloat(formData.get('gear_multiplier')),
+        mappings: collectMappings(),
     };
 
     try {

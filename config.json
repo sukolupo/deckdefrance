@@ -4,5 +4,11 @@
   "cadence_threshold": 95.0,
   "power_threshold_race": 150.0,
   "power_threshold_button_a": 250.0,
-  "gear_multiplier": 2.0
+  "gear_multiplier": 2.0,
+  "mappings": [
+    {
+      "source": "power",
+      "target": "left_stick_y"
+    }
+  ]
 }

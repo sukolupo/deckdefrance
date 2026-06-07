@@ -90,7 +90,28 @@ Tacx Trainer (BLE)
 - `cadence > 95` → `button_b = True`
 - `resistance * 2` (clamped 1-10) → `gear`
 - `trainer_power > 150` → `mode = "race"`, else `"cruise"`
-- watts 0-300 → ABS_Z 0-255
+
+### Configurable Mappings (`config.json` → `mappings[]`)
+
+Users define which trainer metrics map to which controller outputs. Each mapping has:
+
+| Field | Description |
+|-------|-------------|
+| `source` | One of `"power"`, `"cadence"`, `"resistance"` |
+| `target` | Controller output: `right_trigger`, `left_trigger`, `left_stick_x`, `left_stick_y`, `right_stick_x`, `right_stick_y`, `btn_a`, `btn_b`, `btn_x`, `btn_y` |
+| `threshold` | (optional, buttons only) Source value above which the button is pressed |
+
+**Scaling rules:**
+- **Axes** (triggers, sticks): source value 0→max scales to target 0→255. Joystick Y-axes invert (higher source = higher stick deflection).
+- **Buttons**: emit press when source exceeds threshold, release when below.
+
+**Default mappings:**
+```json
+[
+  { "source": "power", "target": "right_trigger" },
+  { "source": "power", "target": "left_stick_y" }
+]
+```
 
 ## Frontend Polling
 
@@ -122,5 +143,6 @@ The app runs on the Steam Deck. The configured Tacx MAC is `F0:C5:70:96:A9:3B`.
 - `import time` was originally inside the power handler — moved to module top
 - `crank_revolutions` may not exist on all trainer models — falls back to 0 with `getattr`
 - Frontend JS cache-busting uses `?v=N` in script tag — bump on changes
+- The trainer sends notifications even at 0W (idle), so data flow is always active
 - The trainer sends notifications even at 0W (idle), so data flow is always active
 - Chart.js loaded from CDN (not bundled) — requires internet
