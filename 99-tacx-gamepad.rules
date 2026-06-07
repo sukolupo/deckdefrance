@@ -1,0 +1,3 @@
+# Tacx Virtual Gamepad - ensure Steam sees it as a controller
+KERNEL=="js*", ATTRS{name}=="Tacx Virtual Gamepad", MODE="0666", TAG+="uaccess", TAG+="seat"
+KERNEL=="event*", ATTRS{name}=="Tacx Virtual Gamepad", MODE="0666", TAG+="uaccess", TAG+="seat"

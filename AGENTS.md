@@ -117,8 +117,8 @@ The app runs on the Steam Deck. The configured Tacx MAC is `F0:C5:70:96:A9:3B`.
 
 ## Known Issues / Notes
 
-- BLE connection can take 2-5s; start-streaming waits up to 10s (20×0.5s polls)
-- The `start_streaming` endpoint used to wait only 0.5s — was too short, fixed to loop up to 10s
+- BLE connection can take 2-15s; start-streaming waits up to 20s (40×0.5s polls)
+- The `start_streaming` endpoint used to wait only 0.5s — was too short, bumped to 10s then 20s
 - `import time` was originally inside the power handler — moved to module top
 - `crank_revolutions` may not exist on all trainer models — falls back to 0 with `getattr`
 - Frontend JS cache-busting uses `?v=N` in script tag — bump on changes

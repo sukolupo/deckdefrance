@@ -19,7 +19,14 @@ events = [
 ]
 
 # Create the virtual controller device named "Tacx Virtual Gamepad"
-device = uinput.Device(events, name="Tacx Virtual Gamepad")
+# Using Xbox 360 vendor/product IDs so Steam Input recognizes it as a gamepad
+device = uinput.Device(
+    events,
+    name="Tacx Virtual Gamepad",
+    vendor=0x045e,   # Microsoft
+    product=0x028e,  # Xbox 360 Controller
+    version=0x0110,
+)
 
 
 def map_tacx_to_controller(trainer_power: float, cadence: float, resistance: float) -> Dict[str, Any]:

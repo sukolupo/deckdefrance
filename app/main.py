@@ -93,7 +93,7 @@ async def test_trainer_connection():
         }
 
     try:
-        async with BleakClient(mac_address, timeout=10.0) as client:
+        async with BleakClient(mac_address, timeout=20.0) as client:
             if not client.is_connected:
                 await client.connect()
 
@@ -166,7 +166,7 @@ async def stream_trainer_data(mac_address: str):
     global streaming_active, streaming_message, last_power_data
     
     try:
-        async with BleakClient(mac_address, timeout=10.0) as client:
+        async with BleakClient(mac_address, timeout=20.0) as client:
             if not client.is_connected:
                 await client.connect()
             
@@ -237,8 +237,8 @@ async def start_streaming():
     
     try:
         streaming_task = asyncio.create_task(stream_trainer_data(mac_address))
-        # Wait up to 10 seconds for BLE connection
-        for _ in range(20):
+        # Wait up to 20 seconds for BLE connection
+        for _ in range(40):
             if streaming_active:
                 return {
                     "status": "streaming",
@@ -265,7 +265,7 @@ async def start_streaming():
 
         return {
             "status": "error",
-            "message": streaming_message or "BLE connection timed out after 10s",
+            "message": streaming_message or "BLE connection timed out after 20s",
         }
     except Exception as e:
         streaming_active = False

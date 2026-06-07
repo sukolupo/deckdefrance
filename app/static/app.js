@@ -558,6 +558,9 @@ function updateChart(watts, cadence, trigger) {
 }
 
 async function pollStreamData() {
+    const debugEnabled = document.getElementById('enable-debug')?.checked;
+    if (!debugEnabled) return;
+
     try {
         const response = await fetch('/api/stream-data', {
             method: 'GET',
@@ -590,6 +593,9 @@ async function pollStreamData() {
 }
 
 async function pollStreamLog() {
+    const debugEnabled = document.getElementById('enable-debug')?.checked;
+    if (!debugEnabled) return;
+
     try {
         const response = await fetch('/api/stream-log', {
             method: 'GET',
