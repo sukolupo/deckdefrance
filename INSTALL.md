@@ -111,30 +111,43 @@ pkill -f "uvicorn app.main:app"
 
 The Tacx Virtual Gamepad is configured as an Xbox 360 controller (`vendor=0x045e, product=0x028e`). After the app is running, Steam should detect it.
 
-> **Note:** Some games (e.g. Tour de France) only accept input from the first controller (js0). Since the Tacx pad is a separate device, the game won't see inputs from both the Steam Deck and the Tacx pad unless you configure **Additional Controllers** in Steam.
+> **Note:** Some games (e.g. Tour de France) only accept input from the first controller (js0). Since the Tacx pad is a separate device, the game won't see inputs from both the Steam Deck and the Tacx pad unless you use the **Controller Passthrough** feature to combine them into one device.
 
-### In Steam Big Picture Mode:
+### Controller Passthrough (Recommended)
 
-1. Open **Steam Big Picture** (or Desktop mode with controller config)
-2. Launch your game
-3. Press the **Steam button** → **Controller Settings** → select the game's config
-4. Near the bottom of the config screen you'll see **"Additional Controllers"** — click it
-5. You should see **Tacx Virtual Gamepad** listed alongside your Steam Deck controller
-6. Bind the same game actions to **both devices**:
-   - Steam Deck → your usual button/joystick bindings
-   - Tacx pad → bind its right trigger (ABS_RZ) to `RT` and any virtual buttons (A/B/X/Y) to their game actions
-7. Steam merges inputs from all configured controllers — pressing RT on the Tacx pad or on the Deck will trigger the same action in-game
+The **Controller Passthrough** feature reads inputs from the Steam Deck controller (or any gamepad) and forwards them through the Tacx Virtual Gamepad. This means the game sees **one controller** that combines:
+- Steam Deck controls (left stick, dpad, face buttons, bumpers, triggers)
+- Tacx trainer inputs (right trigger from power mapping, configurable button presses)
 
-### Steam Controller Template
+#### How to use:
 
-A pre-made template `controller_tacx_gamepad.vdf` is included in the repo. It pre-maps the Tacx pad's right trigger (ABS_RZ), left trigger (ABS_Z), left stick, face buttons, Select, and Start to standard gamepad actions.
+1. Start the app (see step 7)
+2. Open the web UI at `http://localhost:8000/`
+3. Go to the **Control** tab
+4. Under **Controller Passthrough**, click **Start Passthrough**
+   - The app auto-detects the Steam Deck's virtual Xbox 360 pad
+   - All Steam Deck inputs are forwarded to the Tacx Virtual Gamepad
+5. In Steam, configure your game to use **Tacx Virtual Gamepad** as player 1 instead of the Steam Deck controller
+   - Open Steam Big Picture → Controller Settings for your game
+   - Select "Tacx Virtual Gamepad" as the active controller
+6. Optionally start BLE streaming to also map trainer power to the right trigger
 
-To install it:
+The passthrough runs independently from BLE streaming — you can use the Steam Deck controls even without a trainer connected.
+
+### Manual Steam Setup (Alternative)
+
+If you prefer not to use passthrough, configure **Additional Controllers** in Steam:
+
+1. Open **Steam Big Picture** → launch your game
+2. Press **Steam button** → **Controller Settings** → select the game's config
+3. Near the bottom you'll see **"Additional Controllers"** — click it
+4. Bind game actions to **both** the Steam Deck controller and the Tacx pad
+5. Steam merges inputs from all configured controllers
+
+A pre-made template `controller_tacx_gamepad.vdf` can help with step 4:
 ```bash
 cp controller_tacx_gamepad.vdf ~/.steam/steam/controller_base/templates/
 ```
-
-After installing, open any game's controller config in Steam Big Picture and you'll see **"Tacx Gamepad"** in the templates list. Select it for the Tacx pad when setting up **Additional Controllers** — bindings are pre-filled.
 
 ### If Steam doesn't see the Tacx pad:
 
@@ -167,6 +180,8 @@ The **Steer** tab provides a draggable virtual joystick that controls the in-gam
 5. Works independently of BLE streaming — no trainer connection required
 
 The joystick sends updates at ~30fps via `POST /api/joystick` with `{ x, y }` in -1 to 1 range, mapped to 0–65535 on the uinput device.
+
+Works alongside the **Controller Passthrough** feature — both write to the same Tacx Virtual Gamepad, so the game sees steering from either source.
 
 ### Remote Steering from a Phone or Tablet
 
@@ -215,5 +230,6 @@ deckdefrance/
     ├── mapper.py           ← uinput device + power mapping
     ├── config.py           ← JSON config read/write
     ├── discovery.py        ← BLE device scanning
+    ├── passthrough.py      ← Steam Deck controller passthrough to uinput
     └── static/             ← Web UI (HTML, JS, CSS)
 ```

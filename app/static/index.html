@@ -123,9 +123,40 @@
                 <ul>
                     <li>Make sure your trainer is configured and selected in the Configuration tab</li>
                     <li>The trainer should be connected and ready before starting the stream</li>
-                    <li>The virtual gamepad will emit power values on the Right Trigger (ABS_Z)</li>
+                    <li>The virtual gamepad will emit power values on the Right Trigger (ABS_RZ)</li>
                     <li>Click "Stop Streaming" to safely disconnect and stop data transmission</li>
+                    <li>Use <strong>Controller Passthrough</strong> to forward Steam Deck inputs through the Tacx pad so the game sees one combined controller</li>
                 </ul>
+            </div>
+
+            <!-- Controller Passthrough -->
+            <div class="control-section">
+                <h3>Controller Passthrough</h3>
+                <p style="color:#666;line-height:1.5;margin-bottom:15px;">
+                    Forward Steam Deck controller inputs through the Tacx Virtual Gamepad. 
+                    This lets the game see <strong>one controller</strong> that combines Steam Deck controls + trainer power.
+                    Configure the game in Steam to use the "Tacx Virtual Gamepad" as player 1.
+                </p>
+                <div class="status-card">
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span id="passthrough-status" class="status-value status-err">Inactive</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Source Device:</span>
+                        <span id="passthrough-device" class="status-value status-muted">Not started</span>
+                    </div>
+                </div>
+                <div class="control-buttons">
+                    <button class="btn btn-success" id="passthrough-start-btn" onclick="startPassthrough()">
+                        Start Passthrough
+                    </button>
+                    <button class="btn btn-danger" id="passthrough-stop-btn" onclick="stopPassthrough()" disabled>
+                        Stop Passthrough
+                    </button>
+                </div>
+                <button class="btn btn-secondary" onclick="refreshPassthroughStatus()" style="margin-top:10px;">Refresh Status</button>
+                <div id="passthrough-message" class="message"></div>
             </div>
         </div>
 
@@ -310,6 +341,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=15"></script>
+    <script src="/static/app.js?v=16"></script>
 </body>
 </html>

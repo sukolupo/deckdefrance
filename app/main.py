@@ -12,6 +12,12 @@ from pycycling.cycling_power_service import CyclingPowerService
 from .mapper import map_tacx_to_controller, apply_mappings, device, _BUTTON_CODES
 from .config import get_config, update_config, FTP_PRESETS
 from .discovery import discover_tacx_trainers, discover_all_devices
+from .passthrough import (
+    start_passthrough,
+    stop_passthrough,
+    get_passthrough_status,
+    list_controller_devices,
+)
 import uinput
 
 app = FastAPI(title="deckdefrance", version="0.1.0")
@@ -128,6 +134,34 @@ async def press_button(request: ButtonRequest):
         return {"status": "error", "message": f"Unknown button: {request.button}"}
     device.emit(code, 1 if request.pressed else 0)
     return {"status": "ok", "button": request.button, "pressed": request.pressed}
+
+
+@app.get("/api/passthrough/devices")
+async def passthrough_devices():
+    """List available gamepad devices that can be used as passthrough sources."""
+    return {"devices": list_controller_devices()}
+
+
+@app.post("/api/passthrough/start")
+async def passthrough_start(source_path: str | None = None):
+    """Start passthrough from a source controller device to our uinput device.
+    
+    Optionally specify a source_path (e.g. /dev/input/event15).
+    If omitted, auto-detects the Steam Deck controller.
+    """
+    return start_passthrough(source_path)
+
+
+@app.post("/api/passthrough/stop")
+async def passthrough_stop():
+    """Stop the passthrough."""
+    return stop_passthrough()
+
+
+@app.get("/api/passthrough/status")
+async def passthrough_status():
+    """Get current passthrough status."""
+    return get_passthrough_status()
 
 
 @app.post("/api/test-trainer")

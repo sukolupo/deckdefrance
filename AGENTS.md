@@ -1,12 +1,13 @@
 # deckdefrance
 
-Tacx turbo trainer → Tour de France controller mapper. Connects to a Tacx smart trainer over BLE, maps power/cadence to virtual gamepad (uinput) inputs, and serves a web dashboard.
+Tacx turbo trainer → Tour de France controller mapper. Connects to a Tacx smart trainer over BLE, maps power/cadence to virtual gamepad (uinput) inputs, optionally passthroughs Steam Deck controller inputs through the same device, and serves a web dashboard.
 
 ## Stack
 
 - **Backend**: FastAPI (Python 3.12) via uvicorn, port 8000
 - **BLE**: `bleak` + `pycycling` (Cycling Power Service)
-- **Virtual gamepad**: `python-uinput` — Xbox 360 controller vendor/product IDs (0x045e/0x028e), 6 axes + 4 buttons, configurable mappings via `apply_mappings()`
+- **Virtual gamepad**: `python-uinput` — Xbox 360 controller vendor/product IDs (0x045e/0x028e), 8 axes + 7 buttons, configurable mappings via `apply_mappings()`
+- **Passthrough**: `evdev` — reads Steam Deck controller (event15) and forwards to our uinput device, so the game sees one combined controller
 - **Frontend**: Vanilla HTML/CSS/JS + Chart.js (CDN)
 - **Dependencies**: `requirements.txt`, Docker optional
 
@@ -21,9 +22,10 @@ deckdefrance/
 │   ├── mapper.py        # Tacx → controller mapping logic + uinput device
 │   ├── config.py        # JSON config read/write + FTP presets
 │   ├── discovery.py     # BLE device discovery via BleakScanner
+│   ├── passthrough.py   # Steam Deck controller evdev passthrough to uinput
 │   └── static/
-│       ├── index.html   # Web UI (5 tabs: Status, Control, Discover, Config, Test)
-│       ├── app.js       # Frontend logic — polling, chart, streaming, config/mappings UI
+│       ├── index.html   # Web UI (6 tabs: Status, Control, Discover, Steer, Config, Test)
+│       ├── app.js       # Frontend logic — polling, chart, config, mappings, virtual joystick, passthrough
 │       └── style.css    # Purple gradient theme
 ├── start.sh             # Production startup script (kills old, starts single worker)
 ├── config.json          # Persistent config (live: F0:C5:70:96:A9:3B)
@@ -50,6 +52,11 @@ deckdefrance/
 | GET | `/api/stream-status` | `{ streaming: bool, message: str }` |
 | GET | `/api/stream-data` | `{ watts, cadence, timestamp }` |
 | GET | `/api/stream-log` | Array of last 100 `{ time, watts, cadence }` entries |
+| GET | `/api/passthrough/status` | `{ active: bool, source, device_name }` |
+| GET | `/api/passthrough/devices` | List available gamepad evdev devices (excludes Tacx pad) |
+| POST | `/api/passthrough/start` | Start passthrough (auto-detect Steam Deck or provide `source_path`) |
+| POST | `/api/passthrough/stop` | Stop passthrough |
+| POST | `/api/button` | Press/release a virtual button `{ button, pressed }` |
 
 ## Streaming Data Flow
 
@@ -168,6 +175,21 @@ docker compose up --build
 ```
 
 The app runs on the Steam Deck. The configured Tacx MAC is `F0:C5:70:96:A9:3B`.
+
+## Controller Passthrough Flow
+
+```
+Steam Deck Controller (event15, evdev)
+  → passthrough.run_passthrough() (async evdev reader)
+    → reads EV_ABS (sticks, triggers, dpad) and EV_KEY (buttons)
+    → converts ranges: sticks -32767..32767 → 0..65535, triggers 0..255 unchanged
+    → emits to our uinput device (same _BUTTON_CODES / _EMIT_EVTS)
+  → Combined with trainer power mappings on the same uinput device
+  → Game sees one controller (Tacx Virtual Gamepad) with ALL inputs
+
+Note: passthrough and trainer streaming can operate independently or simultaneously.
+Both write to the same uinput device — last value wins for each axis/button.
+```
 
 ## Known Issues / Notes
 

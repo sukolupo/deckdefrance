@@ -22,6 +22,9 @@ _AXIS_DESCRIPTORS: Dict[str, tuple] = {
     # ABS_Z is read as left trigger, ABS_RZ as right trigger.
     "right_trigger": uinput.ABS_RZ + (0, 255, 0, 0),
     "left_trigger":  uinput.ABS_Z + (0, 255, 0, 0),
+    # D-pad as axes for passthrough
+    "dpad_x": uinput.ABS_HAT0X + (-1, 1, 0, 0),
+    "dpad_y": uinput.ABS_HAT0Y + (-1, 1, 0, 0),
 }
 
 _BUTTON_CODES: Dict[str, tuple] = {
@@ -43,6 +46,8 @@ _EMIT_EVTS: Dict[str, tuple] = {
     # Swapped to match SDL/game expectations (ABS_RZ = right trigger)
     "right_trigger": uinput.ABS_RZ,
     "left_trigger":  uinput.ABS_Z,
+    "dpad_x": uinput.ABS_HAT0X,
+    "dpad_y": uinput.ABS_HAT0Y,
     **_BUTTON_CODES,
 }
 

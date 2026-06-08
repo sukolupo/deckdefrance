@@ -925,6 +925,74 @@ function stopStreamDataPolling() {
     });
 })();
 
+// Controller Passthrough
+async function refreshPassthroughStatus() {
+    try {
+        const res = await fetch('/api/passthrough/status');
+        const data = await res.json();
+        const statusEl = document.getElementById('passthrough-status');
+        const deviceEl = document.getElementById('passthrough-device');
+        const startBtn = document.getElementById('passthrough-start-btn');
+        const stopBtn = document.getElementById('passthrough-stop-btn');
+
+        if (data.active) {
+            statusEl.textContent = '✓ Active';
+            statusEl.className = 'status-value status-ok';
+            deviceEl.textContent = data.device_name || data.source || 'Unknown';
+            deviceEl.className = 'status-value';
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        } else {
+            statusEl.textContent = '✗ Inactive';
+            statusEl.className = 'status-value status-err';
+            deviceEl.textContent = 'Not started';
+            deviceEl.className = 'status-value status-muted';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+    } catch (e) {
+        console.error('Error refreshing passthrough status:', e);
+    }
+}
+
+async function startPassthrough() {
+    const startBtn = document.getElementById('passthrough-start-btn');
+    const msgEl = document.getElementById('passthrough-message');
+    startBtn.disabled = true;
+    msgEl.className = 'message';
+
+    try {
+        const res = await fetch('/api/passthrough/start', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'started' || data.status === 'already_active') {
+            showMessage('passthrough-message', 'Passthrough started — Steam Deck inputs are now forwarded through the Tacx pad', 'success');
+        } else {
+            showMessage('passthrough-message', data.message || 'Failed to start passthrough', 'error');
+        }
+        refreshPassthroughStatus();
+    } catch (e) {
+        showMessage('passthrough-message', 'Error: ' + e.message, 'error');
+        startBtn.disabled = false;
+    }
+}
+
+async function stopPassthrough() {
+    const stopBtn = document.getElementById('passthrough-stop-btn');
+    const msgEl = document.getElementById('passthrough-message');
+    stopBtn.disabled = true;
+    msgEl.className = 'message';
+
+    try {
+        const res = await fetch('/api/passthrough/stop', { method: 'POST' });
+        const data = await res.json();
+        showMessage('passthrough-message', 'Passthrough stopped', 'success');
+        refreshPassthroughStatus();
+    } catch (e) {
+        showMessage('passthrough-message', 'Error: ' + e.message, 'error');
+        stopBtn.disabled = false;
+    }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     refreshStatusTab();
@@ -938,4 +1006,5 @@ document.addEventListener('DOMContentLoaded', () => {
             startStreamDataPolling();
         }
     });
+    refreshPassthroughStatus();
 });
