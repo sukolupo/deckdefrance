@@ -35,6 +35,10 @@ _BUTTON_CODES: Dict[str, tuple] = {
     "btn_select": uinput.BTN_SELECT,
     "btn_start": uinput.BTN_START,
     "btn_mode": uinput.BTN_MODE,
+    "btn_lb": uinput.BTN_TL,
+    "btn_rb": uinput.BTN_TR,
+    "btn_l3": uinput.BTN_THUMBL,
+    "btn_r3": uinput.BTN_THUMBR,
 }
 
 # All targets (name -> base type+code tuple for emitting)

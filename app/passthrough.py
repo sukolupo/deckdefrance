@@ -11,6 +11,8 @@ _EVDEV_TO_TARGET = {
     ecodes.ABS_RY: "right_stick_y",
     ecodes.ABS_Z: "left_trigger",
     ecodes.ABS_RZ: "right_trigger",
+    ecodes.ABS_HAT0X: "dpad_x",
+    ecodes.ABS_HAT0Y: "dpad_y",
 }
 
 # Button codes (evdev BTN_* → our _BUTTON_CODES keys)
@@ -22,6 +24,10 @@ _EVDEV_BTN_TO_TARGET = {
     ecodes.BTN_SELECT: "btn_select",
     ecodes.BTN_START: "btn_start",
     ecodes.BTN_MODE: "btn_mode",
+    ecodes.BTN_TL: "btn_lb",
+    ecodes.BTN_TR: "btn_rb",
+    ecodes.BTN_THUMBL: "btn_l3",
+    ecodes.BTN_THUMBR: "btn_r3",
 }
 
 # Known Steam controller vendor/product IDs
@@ -36,21 +42,67 @@ _passthrough_active = False
 _passthrough_source = ""
 _passthrough_device_name = ""
 _lock = threading.Lock()
+_event_counts: dict[str, int] = {}
+_failed_devices: set[str] = set()  # devices that failed to read (grabbed by Steam)
+
+
+def _find_all_controllers():
+    """Find all Steam controller devices with gamepad axes,
+    returning (path, name, product) tuples."""
+    found = []
+    for path in evdev.list_devices():
+        try:
+            dev = InputDevice(path)
+            if (dev.info.vendor in _STEAM_VENDORS
+                and dev.info.product in _STEAM_PRODUCTS
+                and _has_gamepad_axes(dev)):
+                found.append((path, dev.name, dev.info.product))
+        except (PermissionError, OSError):
+            continue
+    return found
+
+
+def find_fallback_controller() -> tuple[str, str] | None:
+    """Find a controller of the other type (physical vs virtual) than the failed one."""
+    all_devs = _find_all_controllers()
+    with _lock:
+        failed = _failed_devices.copy()
+    for path, name, product in all_devs:
+        if path not in failed:
+            return (path, name)
+    return None
+
+
+def _has_gamepad_axes(dev: InputDevice) -> bool:
+    """Check if an evdev device has gamepad analog axes (ABS_X, ABS_Y, etc.).
+    Stub devices with only 1-2 axes are skipped."""
+    caps = dev.capabilities()
+    abs_codes = [c for c, _ in caps.get(ecodes.EV_ABS, [])]
+    gamepad_codes = {ecodes.ABS_X, ecodes.ABS_Y, ecodes.ABS_RX, ecodes.ABS_RY,
+                     ecodes.ABS_Z, ecodes.ABS_RZ, ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y}
+    matches = set(abs_codes) & gamepad_codes
+    # Must have at least 3 gamepad axes to be considered a full controller
+    return len(matches) >= 3
 
 
 def find_steam_controller() -> tuple[str, str] | None:
-    """Find the Steam Deck virtual Xbox 360 controller event device.
-    Prefers the standard Xbox 360 pad (product 0x11ff) over the raw Steam Controller.
+    """Find the Steam Deck controller event device with gamepad axes.
+    Prefers the physical controller (product 0x1205) with real axes
+    over the virtual Xbox pad (product 0x11ff). Skips device stubs
+    (like event11 which has no ABS axes).
     """
     found = []
     for path in evdev.list_devices():
         try:
             dev = InputDevice(path)
-            if dev.info.vendor in _STEAM_VENDORS and dev.info.product in _STEAM_PRODUCTS:
+            if (dev.info.vendor in _STEAM_VENDORS
+                and dev.info.product in _STEAM_PRODUCTS
+                and _has_gamepad_axes(dev)):
                 found.append((path, dev.name, dev.info.product))
         except (PermissionError, OSError):
             continue
-    found.sort(key=lambda x: 0 if x[2] == 0x11ff else 1)
+    # Prefer physical (0x1205) over virtual (0x11ff)
+    found.sort(key=lambda x: 0 if x[2] == 0x1205 else 1)
     return (found[0][0], found[0][1]) if found else None
 
 
@@ -94,7 +146,11 @@ def _scale_trigger(value: int, src_max: int) -> int:
 
 def _forward_event(event, abs_info: dict):
     """Forward a single evdev event to our uinput device."""
-    global device
+    global device, _event_counts
+
+    with _lock:
+        key = f"{event.type}:{event.code}"
+        _event_counts[key] = _event_counts.get(key, 0) + 1
 
     if event.type == ecodes.EV_ABS:
         target = _EVDEV_TO_TARGET.get(event.code)
@@ -112,6 +168,10 @@ def _forward_event(event, abs_info: dict):
             scaled = _scale_trigger(event.value, src_max)
             device.emit(_EMIT_EVTS[target], scaled)
 
+        elif target in ("dpad_x", "dpad_y"):
+            # dpad values are -1, 0, 1 — pass through directly
+            device.emit(_EMIT_EVTS[target], event.value)
+
     elif event.type == ecodes.EV_KEY:
         btn_key = _EVDEV_BTN_TO_TARGET.get(event.code)
         if btn_key:
@@ -119,8 +179,17 @@ def _forward_event(event, abs_info: dict):
 
 
 def _open_source(path: str):
-    """Open an evdev source device and cache its axis info."""
+    """Open an evdev source device and cache its axis info.
+    Grabs virtual devices so the game can't read from them directly,
+    but does NOT grab the physical Steam Deck controller (Steam needs it)."""
     source = InputDevice(path)
+    # Only grab non-physical devices (vendor 0x28de, product 0x11ff = virtual)
+    is_physical = source.info.vendor == 0x28de and source.info.product == 0x1205
+    if not is_physical:
+        source.grab()
+        print(f"[passthrough] Grabbed {path} ({source.name})")
+    else:
+        print(f"[passthrough] Opened physical {path} ({source.name}) — not grabbing")
     abs_info = {}
     caps = source.capabilities()
     for abs_code, absinfo in caps.get(ecodes.EV_ABS, []):
@@ -136,6 +205,7 @@ def _run_passthrough(source_path: str):
     with _lock:
         _passthrough_active = True
         _passthrough_source = source_path
+        _event_counts.clear()
 
     abs_info = {}
     source = None
@@ -152,13 +222,24 @@ def _run_passthrough(source_path: str):
                 _passthrough_device_name = source.name
             except (FileNotFoundError, PermissionError, OSError):
                 # Device not available yet — retry with auto-detect
+                if source_path:
+                    with _lock:
+                        _failed_devices.add(source_path)
                 source_path = None
                 found = find_steam_controller()
                 if found:
                     source_path, dev_name = found
                     with _lock:
-                        _passthrough_source = source_path
-                    continue
+                        if source_path in _failed_devices:
+                            # This device previously failed — try the other type
+                            source_path = None
+                            found2 = find_fallback_controller()
+                            if found2:
+                                source_path, dev_name = found2
+                    if source_path:
+                        with _lock:
+                            _passthrough_source = source_path
+                        continue
                 threading.Event().wait(1.0)
                 continue
 
@@ -169,7 +250,16 @@ def _run_passthrough(source_path: str):
         except BlockingIOError:
             threading.Event().wait(0.001)
         except OSError:
-            # Device disconnected — close and reconnect next iteration
+            # Device disconnected or grabbed — mark as failed, close and reconnect next iteration
+            with _lock:
+                if source_path:
+                    _failed_devices.add(source_path)
+            try:
+                is_physical = source.info.vendor == 0x28de and source.info.product == 0x1205
+                if not is_physical:
+                    source.ungrab()
+            except Exception:
+                pass
             try:
                 source.close()
             except Exception:
@@ -179,6 +269,12 @@ def _run_passthrough(source_path: str):
             threading.Event().wait(0.5)
 
     if source:
+        try:
+            is_physical = source.info.vendor == 0x28de and source.info.product == 0x1205
+            if not is_physical:
+                source.ungrab()
+        except Exception:
+            pass
         try:
             source.close()
         except Exception:
@@ -233,4 +329,28 @@ def get_passthrough_status() -> dict:
             "active": _passthrough_active,
             "source": _passthrough_source if _passthrough_active else None,
             "device_name": _passthrough_device_name if _passthrough_active else None,
+        }
+
+def get_passthrough_debug() -> dict:
+    """Get debug info including event counts."""
+    with _lock:
+        event_counts = dict(sorted(
+            _event_counts.items(),
+            key=lambda x: -x[1]
+        ))
+        source = _passthrough_source
+        source_exists = False
+        if source:
+            try:
+                dev = InputDevice(source)
+                source_exists = True
+            except Exception:
+                source_exists = False
+        return {
+            "active": _passthrough_active,
+            "source": source,
+            "source_exists": source_exists,
+            "device_name": _passthrough_device_name,
+            "event_counts": event_counts,
+            "total_events": sum(_event_counts.values()),
         }

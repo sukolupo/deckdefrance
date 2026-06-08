@@ -146,6 +146,10 @@
                         <span class="status-label">Source Device:</span>
                         <span id="passthrough-device" class="status-value status-muted">Not started</span>
                     </div>
+                    <div class="status-item" id="passthrough-debug-row" style="display:none;">
+                        <span class="status-label">Events Forwarded:</span>
+                        <span id="passthrough-events" class="status-value">0</span>
+                    </div>
                 </div>
                 <div class="control-buttons">
                     <button class="btn btn-success" id="passthrough-start-btn" onclick="startPassthrough()">
@@ -157,6 +161,10 @@
                 </div>
                 <button class="btn btn-secondary" onclick="refreshPassthroughStatus()" style="margin-top:10px;">Refresh Status</button>
                 <div id="passthrough-message" class="message"></div>
+                <details style="margin-top:15px;font-size:0.9em;color:#888;">
+                    <summary>Debug: Event Counts</summary>
+                    <pre id="passthrough-debug-json" style="font-size:0.75em;max-height:200px;overflow:auto;background:#1a1a2e;padding:8px;border-radius:4px;margin-top:5px;">Waiting for data...</pre>
+                </details>
             </div>
         </div>
 
@@ -330,6 +338,24 @@
             </div>
 
             <div class="test-section">
+                <h3>Virtual Controller Buttons</h3>
+                <p style="color:#666;margin-bottom:8px;">Test individual buttons on the Tacx Virtual Gamepad.</p>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-secondary" data-btn="btn_a">A</button>
+                    <button class="btn btn-secondary" data-btn="btn_b">B</button>
+                    <button class="btn btn-secondary" data-btn="btn_x">X</button>
+                    <button class="btn btn-secondary" data-btn="btn_y">Y</button>
+                    <button class="btn btn-secondary" data-btn="btn_lb">LB</button>
+                    <button class="btn btn-secondary" data-btn="btn_rb">RB</button>
+                    <button class="btn btn-secondary" data-btn="btn_l3">L3</button>
+                    <button class="btn btn-secondary" data-btn="btn_r3">R3</button>
+                    <button class="btn btn-secondary" data-btn="btn_select">Select</button>
+                    <button class="btn btn-secondary" data-btn="btn_start">Start</button>
+                    <button class="btn btn-secondary" data-btn="btn_mode">Guide</button>
+                </div>
+            </div>
+
+            <div class="test-section">
                 <h3>Test Trainer Connection</h3>
                 <button class="btn btn-success" onclick="testConnection()">
                     <span id="test-btn-text">Test Tacx Connection</span>
@@ -341,6 +367,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=16"></script>
+    <script src="/static/app.js?v=17"></script>
 </body>
 </html>

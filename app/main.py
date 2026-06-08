@@ -16,6 +16,7 @@ from .passthrough import (
     start_passthrough,
     stop_passthrough,
     get_passthrough_status,
+    get_passthrough_debug,
     list_controller_devices,
 )
 import uinput
@@ -162,6 +163,12 @@ async def passthrough_stop():
 async def passthrough_status():
     """Get current passthrough status."""
     return get_passthrough_status()
+
+
+@app.get("/api/passthrough/debug")
+async def passthrough_debug():
+    """Get passthrough debug info (event counts, source exists, etc)."""
+    return get_passthrough_debug()
 
 
 @app.post("/api/test-trainer")

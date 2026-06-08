@@ -928,20 +928,33 @@ function stopStreamDataPolling() {
 // Controller Passthrough
 async function refreshPassthroughStatus() {
     try {
-        const res = await fetch('/api/passthrough/status');
-        const data = await res.json();
+        const [statusRes, debugRes] = await Promise.all([
+            fetch('/api/passthrough/status'),
+            fetch('/api/passthrough/debug'),
+        ]);
+        const status = await statusRes.json();
+        const debug = await debugRes.json();
         const statusEl = document.getElementById('passthrough-status');
         const deviceEl = document.getElementById('passthrough-device');
         const startBtn = document.getElementById('passthrough-start-btn');
         const stopBtn = document.getElementById('passthrough-stop-btn');
+        const debugRow = document.getElementById('passthrough-debug-row');
+        const eventsEl = document.getElementById('passthrough-events');
+        const debugJson = document.getElementById('passthrough-debug-json');
 
-        if (data.active) {
+        if (status.active) {
             statusEl.textContent = '✓ Active';
             statusEl.className = 'status-value status-ok';
-            deviceEl.textContent = data.device_name || data.source || 'Unknown';
+            deviceEl.textContent = status.device_name || status.source || 'Unknown';
             deviceEl.className = 'status-value';
             startBtn.disabled = true;
             stopBtn.disabled = false;
+
+            debugRow.style.display = 'flex';
+            eventsEl.textContent = debug.total_events || 0;
+            const topEvents = Object.entries(debug.event_counts || {}).slice(0, 15)
+                .map(([k, v]) => `${k}: ${v}`).join('\n');
+            debugJson.textContent = topEvents || 'No events yet (only active in Gaming Mode)';
         } else {
             statusEl.textContent = '✗ Inactive';
             statusEl.className = 'status-value status-err';
@@ -949,6 +962,8 @@ async function refreshPassthroughStatus() {
             deviceEl.className = 'status-value status-muted';
             startBtn.disabled = false;
             stopBtn.disabled = true;
+            debugRow.style.display = 'none';
+            debugJson.textContent = 'Waiting for data...';
         }
     } catch (e) {
         console.error('Error refreshing passthrough status:', e);
@@ -1007,4 +1022,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     refreshPassthroughStatus();
+    // Poll passthrough status every 3s
+    setInterval(refreshPassthroughStatus, 3000);
 });
