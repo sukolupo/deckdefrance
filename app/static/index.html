@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deckdefrance - Tacx Trainer Control</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=18">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -16,6 +16,7 @@
             <button class="nav-btn active" data-tab="status">Status</button>
             <button class="nav-btn" data-tab="control">Control</button>
             <button class="nav-btn" data-tab="discover">Discover</button>
+            <button class="nav-btn" data-tab="play">Play</button>
             <button class="nav-btn" data-tab="steer">Steer</button>
             <button class="nav-btn" data-tab="config">Configuration</button>
             <button class="nav-btn" data-tab="test">Test Connection</button>
@@ -226,6 +227,63 @@
             <div class="joystick-coords">
                 <div>X: <span id="joy-x">0.00</span></div>
                 <div>Y: <span id="joy-y">0.00</span></div>
+            </div>
+        </div>
+
+        <!-- Play Tab -->
+        <div id="play" class="tab-content">
+            <div class="xbox">
+                <!-- Stats bar -->
+                <div class="xbox-stats">
+                    <span>Power <b id="play-power">0</b>W</span>
+                    <span>Cadence <b id="play-cadence">0</b>RPM</span>
+                    <span>Trigger <b id="play-trigger">0</b>/255</span>
+                </div>
+
+                <!-- Shoulder buttons -->
+                <div class="xbox-shoulder">
+                    <button class="xbox-bumper" data-btn="btn_lb">LB</button>
+                    <button class="xbox-bumper" data-btn="btn_rb">RB</button>
+                </div>
+
+                <!-- Main body -->
+                <div class="xbox-body">
+                    <!-- Left column: stick on top, d-pad below -->
+                    <div class="xbox-col xbox-col-left">
+                        <div class="xbox-stick-area">
+                            <div class="joystick-base" id="play-joystick-base">
+                                <div class="joystick-thumb" id="play-joystick-thumb"></div>
+                            </div>
+                            <div class="xbox-stick-labels">
+                                <span id="play-joy-x">0.00</span> , <span id="play-joy-y">0.00</span>
+                            </div>
+                        </div>
+                        <div class="xbox-dpad">
+                            <button data-dpad="up">▲</button>
+                            <button data-dpad="left">◀</button>
+                            <div disabled></div>
+                            <button data-dpad="right">▶</button>
+                            <button data-dpad="down">▼</button>
+                        </div>
+                        <button class="xbox-click" data-btn="btn_l3">L3</button>
+                    </div>
+
+                    <!-- Right column: face buttons on top, nav below -->
+                    <div class="xbox-col xbox-col-right">
+                        <div class="xbox-face">
+                            <button class="xbox-face-btn xbox-y" data-btn="btn_y">Y</button>
+                            <button class="xbox-face-btn xbox-x" data-btn="btn_x">X</button>
+                            <button class="xbox-face-btn xbox-b" data-btn="btn_b">B</button>
+                            <button class="xbox-face-btn xbox-a" data-btn="btn_a">A</button>
+                        </div>
+                        <div class="xbox-nav">
+                            <button class="xbox-nav-btn" data-btn="btn_select">Select</button>
+                            <button class="xbox-guide" data-btn="btn_mode">&#x2295;</button>
+                            <button class="xbox-nav-btn" data-btn="btn_start">Start</button>
+                        </div>
+                        <button class="xbox-click" data-btn="btn_r3">R3</button>
+                    </div>
+                </div>
             </div>
         </div>
 

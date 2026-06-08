@@ -316,6 +316,37 @@ Details: ${data.message || 'Unable to reach trainer'}
     }
 }
 
+// Dpad State
+let dpadState = { x: 0, y: 0 };
+
+function sendDpadState() {
+    fetch('/api/dpad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dpadState),
+    }).catch(() => {});
+}
+
+function setDpad(direction, pressed) {
+    switch (direction) {
+        case 'up':    dpadState.y = pressed ? -1 : 0; break;
+        case 'down':  dpadState.y = pressed ? 1 : 0; break;
+        case 'left':  dpadState.x = pressed ? -1 : 0; break;
+        case 'right': dpadState.x = pressed ? 1 : 0; break;
+    }
+    sendDpadState();
+}
+
+document.querySelectorAll('[data-dpad]').forEach(el => {
+    const dir = el.getAttribute('data-dpad');
+    el.addEventListener('mousedown', e => { e.preventDefault(); setDpad(dir, true); });
+    el.addEventListener('mouseup', e => { e.preventDefault(); setDpad(dir, false); });
+    el.addEventListener('mouseleave', e => { setDpad(dir, false); });
+    el.addEventListener('touchstart', e => { e.preventDefault(); setDpad(dir, true); }, { passive: false });
+    el.addEventListener('touchend', e => { e.preventDefault(); setDpad(dir, false); }, { passive: false });
+    el.addEventListener('touchcancel', e => { setDpad(dir, false); });
+});
+
 // Helper function to show messages
 function showMessage(elementId, message, type) {
     const element = document.getElementById(elementId);
@@ -693,9 +724,6 @@ function updateChart(watts, cadence, trigger) {
 }
 
 async function pollStreamData() {
-    const debugEnabled = document.getElementById('enable-debug')?.checked;
-    if (!debugEnabled) return;
-
     try {
         const response = await fetch('/api/stream-data', {
             method: 'GET',
@@ -711,17 +739,20 @@ async function pollStreamData() {
         const max_target_watts = 300;
         const trigger_value = Math.round((Math.min(watts, max_target_watts) / max_target_watts) * 255);
 
-        // Update power display
+        // Update Control tab
         document.getElementById('stream-power').textContent = Math.round(watts);
-        
-        // Update cadence display
         document.getElementById('stream-cadence').textContent = Math.round(cadence);
-        
-        // Calculate and display controller output (0-255 trigger value)
         document.getElementById('stream-trigger').textContent = trigger_value;
 
-        // Feed chart
-        updateChart(watts, cadence, trigger_value);
+        // Update Play tab
+        document.getElementById('play-power').textContent = Math.round(watts);
+        document.getElementById('play-cadence').textContent = Math.round(cadence);
+        document.getElementById('play-trigger').textContent = trigger_value;
+
+        // Only update chart/log if debug is enabled
+        if (document.getElementById('enable-debug')?.checked) {
+            updateChart(watts, cadence, trigger_value);
+        }
     } catch (error) {
         console.error('Error polling stream data:', error);
     }
@@ -805,14 +836,14 @@ function stopStreamDataPolling() {
 
 // (Removed duplicate overrides and global click handler)
 
-// Virtual Joystick
-(function () {
-    const base = document.getElementById('joystick-base');
-    const thumb = document.getElementById('joystick-thumb');
-    const joyX = document.getElementById('joy-x');
-    const joyY = document.getElementById('joy-y');
+// Virtual Joystick (reusable factory)
+function createJoystick(baseId, thumbId, xDisplayId, yDisplayId) {
+    const base = document.getElementById(baseId);
+    const thumb = document.getElementById(thumbId);
+    const joyX = document.getElementById(xDisplayId);
+    const joyY = document.getElementById(yDisplayId);
 
-    if (!base || !thumb) return;
+    if (!base || !thumb) return null;
 
     let RADIUS = 0;
     let active = false;
@@ -823,7 +854,7 @@ function stopStreamDataPolling() {
     function getRadius() {
         if (RADIUS > 0) return RADIUS;
         RADIUS = (base.offsetWidth / 2) - (thumb.offsetWidth / 2);
-        if (RADIUS <= 0) RADIUS = 65; // fallback: (200/2) - (70/2)
+        if (RADIUS <= 0) RADIUS = (200 / 2) - (70 / 2);
         return RADIUS;
     }
 
@@ -892,17 +923,24 @@ function stopStreamDataPolling() {
         resetJoystick();
     }
 
-    // Mouse events
     base.addEventListener('mousedown', onStart);
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onEnd);
-
-    // Touch events
     base.addEventListener('touchstart', onStart, { passive: false });
     document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('touchend', onEnd, { passive: false });
     document.addEventListener('touchcancel', onEnd, { passive: false });
-})();
+
+    return { reset: resetJoystick };
+}
+
+// Initialize both joysticks on load
+let steerJoystick = null;
+let playJoystick = null;
+document.addEventListener('DOMContentLoaded', () => {
+    steerJoystick = createJoystick('joystick-base', 'joystick-thumb', 'joy-x', 'joy-y');
+    playJoystick = createJoystick('play-joystick-base', 'play-joystick-thumb', 'play-joy-x', 'play-joy-y');
+});
 
 // Virtual Buttons
 (function () {

@@ -50,6 +50,11 @@ class JoystickRequest(BaseModel):
     y: float = 0.0
 
 
+class DpadRequest(BaseModel):
+    x: int = 0
+    y: int = 0
+
+
 class ButtonRequest(BaseModel):
     button: str
     pressed: bool
@@ -124,6 +129,16 @@ async def set_joystick(request: JoystickRequest):
     y_val = int((y + 1.0) / 2.0 * 65535)
     device.emit(uinput.ABS_X, x_val)
     device.emit(uinput.ABS_Y, y_val)
+    return {"x": x, "y": y}
+
+
+@app.post("/api/dpad")
+async def set_dpad(request: DpadRequest):
+    """Set dpad position (-1, 0, or 1 per axis)."""
+    x = max(-1, min(1, request.x))
+    y = max(-1, min(1, request.y))
+    device.emit(uinput.ABS_HAT0X, x)
+    device.emit(uinput.ABS_HAT0Y, y)
     return {"x": x, "y": y}
 
 
