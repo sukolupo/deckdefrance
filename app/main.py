@@ -93,6 +93,12 @@ async def root():
     return FileResponse(static_dir / "index.html", media_type="text/html")
 
 
+@app.get("/play")
+async def play_page():
+    """Serve the full-screen play page."""
+    return FileResponse(static_dir / "play.html", media_type="text/html")
+
+
 @app.get("/api/config")
 async def get_configuration():
     """Retrieve current configuration."""

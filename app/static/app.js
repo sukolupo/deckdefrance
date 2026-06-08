@@ -159,11 +159,13 @@ function collectMappings() {
     });
 }
 
-document.getElementById('config-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
+const configForm = document.getElementById('config-form');
+if (configForm) {
+    configForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    const formData = new FormData(e.target);
-    const config = {
+        const formData = new FormData(e.target);
+        const config = {
         tacx_mac_address: formData.get('tacx_mac_address'),
         max_target_watts: parseFloat(formData.get('max_target_watts')),
         cadence_threshold: parseFloat(formData.get('cadence_threshold')),
@@ -192,6 +194,7 @@ document.getElementById('config-form').addEventListener('submit', async (e) => {
         showMessage('config-message', 'Error saving configuration', 'error');
     }
 });
+}
 
 // Status Tab
 async function refreshStatusTab() {
@@ -725,13 +728,7 @@ function updateChart(watts, cadence, trigger) {
 
 async function pollStreamData() {
     try {
-        const response = await fetch('/api/stream-data', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
+        const response = await fetch('/api/stream-data');
         const data = await response.json();
 
         const watts = data.watts || 0;
@@ -739,17 +736,15 @@ async function pollStreamData() {
         const max_target_watts = 300;
         const trigger_value = Math.round((Math.min(watts, max_target_watts) / max_target_watts) * 255);
 
-        // Update Control tab
-        document.getElementById('stream-power').textContent = Math.round(watts);
-        document.getElementById('stream-cadence').textContent = Math.round(cadence);
-        document.getElementById('stream-trigger').textContent = trigger_value;
+        const updateEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-        // Update Play tab
-        document.getElementById('play-power').textContent = Math.round(watts);
-        document.getElementById('play-cadence').textContent = Math.round(cadence);
-        document.getElementById('play-trigger').textContent = trigger_value;
+        updateEl('stream-power', Math.round(watts));
+        updateEl('stream-cadence', Math.round(cadence));
+        updateEl('stream-trigger', trigger_value);
+        updateEl('play-power', Math.round(watts));
+        updateEl('play-cadence', Math.round(cadence));
+        updateEl('play-trigger', trigger_value);
 
-        // Only update chart/log if debug is enabled
         if (document.getElementById('enable-debug')?.checked) {
             updateChart(watts, cadence, trigger_value);
         }
@@ -943,15 +938,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Virtual Buttons
-(function () {
-    function sendButton(btn, pressed) {
-        fetch('/api/button', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ button: btn, pressed }),
-        }).catch(() => {});
-    }
+function sendButton(btn, pressed) {
+    fetch('/api/button', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ button: btn, pressed }),
+    }).catch(() => {});
+}
 
+(function () {
     document.querySelectorAll('[data-btn]').forEach(el => {
         const btn = el.getAttribute('data-btn');
         el.addEventListener('mousedown', e => { e.preventDefault(); sendButton(btn, true); });
@@ -1046,20 +1041,173 @@ async function stopPassthrough() {
     }
 }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    refreshStatusTab();
-    statusTabInterval = setInterval(refreshStatusTab, 3000);
-    loadConfig();
-    initChart();
-    // If streaming is already active, start data polling (which also starts status polling)
-    refreshStreamStatus().then(() => {
-        const statusIndicator = document.getElementById('stream-status-indicator');
-        if (statusIndicator && statusIndicator.textContent.includes('Streaming')) {
-            startStreamDataPolling();
+// Commands Tab — TDF Official Controls
+const COMMANDS = [
+    { section: "Normal Race", items: [
+        { label: "L-Stick", desc: "Turn — steer left/right", action: "steer", chip: "L-STICK" },
+        { label: "RT", desc: "Pedal — hold longer = stronger effort", chip: "RT" },
+        { label: "LT", desc: "Brake — hold longer = harder braking", chip: "LT" },
+        { label: "A", desc: "Attack / Sprint — press repeatedly", buttons: ["btn_a"], chip: "A", cls: "a" },
+        { label: "A (hold)", desc: "Sustained effort — hold for max power", buttons: ["btn_a"], hold: true, chip: "A", cls: "a" },
+        { label: "X (hold)", desc: "Follow another rider — hold to stay close", buttons: ["btn_x"], hold: true, chip: "X", cls: "x" },
+        { label: "Y", desc: "Take a feed — hold to consume, tap to choose", buttons: ["btn_y"], chip: "Y", cls: "y" },
+        { label: "B", desc: "Team Comm — open team command menu", buttons: ["btn_b"], chip: "B", cls: "b" },
+        { label: "RB", desc: "Aero position downhill / Bike launch at sprint", buttons: ["btn_rb"], chip: "RB", cls: "rb" },
+        { label: "X", desc: "Force regulator — then LB/RB to adjust", buttons: ["btn_x"], chip: "X", cls: "x" },
+        { label: "D-pad →", desc: "Race info — cycle through standings", action: "dpad_right", chip: "→", cls: "dpad" },
+        { label: "R3", desc: "Camera — cycle close-up/aerial/first-person", buttons: ["btn_r3"], chip: "R3", cls: "r3" },
+    ]},
+    { section: "Criterium Combos \u2014 press both together", items: [
+        { label: "LB + \u2191", desc: "Ask for relays", combo: ["btn_lb", "dpad_up"], chip: "LB+\u2191", cls: "combo" },
+        { label: "LB + \u2190", desc: "Ask for reduction in tempo", combo: ["btn_lb", "dpad_left"], chip: "LB+\u2190", cls: "combo" },
+        { label: "LB + \u2193", desc: "Indicate waiting", combo: ["btn_lb", "dpad_down"], chip: "LB+\u2193", cls: "combo" },
+        { label: "LB + A", desc: "Pretend to attack", combo: ["btn_lb", "btn_a"], chip: "LB+A", cls: "combo" },
+        { label: "LB + Y", desc: "Pretend to take a feed", combo: ["btn_lb", "btn_y"], chip: "LB+Y", cls: "combo" },
+        { label: "LB + B", desc: "Pretend to give instructions", combo: ["btn_lb", "btn_b"], chip: "LB+B", cls: "combo" },
+        { label: "LB + RB", desc: "Pretend to be at full speed", combo: ["btn_lb", "btn_rb"], chip: "LB+RB", cls: "combo" },
+    ]},
+    { section: "Time Trial", items: [
+        { label: "L-Stick", desc: "Turn", action: "steer", chip: "L-STICK" },
+        { label: "RT", desc: "Pedal — hold for stronger effort", chip: "RT" },
+        { label: "LT", desc: "Brake — hold for harder braking", chip: "LT" },
+        { label: "A", desc: "Step on the pedal (attack)", buttons: ["btn_a"], chip: "A", cls: "a" },
+        { label: "X (hold)", desc: "Time-trial position — reduce drag", buttons: ["btn_x"], hold: true, chip: "X", cls: "x" },
+        { label: "B", desc: "Pass lead to teammate (team TT)", buttons: ["btn_b"], chip: "B", cls: "b" },
+        { label: "B", desc: "Team Comm — give instructions (team TT)", buttons: ["btn_b"], chip: "B", cls: "b" },
+        { label: "D-pad →", desc: "Intermediate times — cycle standings", action: "dpad_right", chip: "→", cls: "dpad" },
+    ]},
+];
+
+const CHIP_CLS = {
+    a: "cmd-chip-a", b: "cmd-chip-b", x: "cmd-chip-x", y: "cmd-chip-y",
+    lb: "cmd-chip-lb", rb: "cmd-chip-rb", l3: "cmd-chip-l3", r3: "cmd-chip-r3",
+    select: "cmd-chip-select", start: "cmd-chip-start", guide: "cmd-chip-guide",
+    dpad: "cmd-chip-dpad", rt: "cmd-chip-rt", lt: "cmd-chip-lt",
+    combo: "cmd-chip-combo",
+};
+
+function cmdChip(text, cls) {
+    const c = document.createElement("span");
+    c.className = "cmd-chip " + (CHIP_CLS[cls] || "cmd-chip-dpad");
+    c.textContent = text;
+    return c;
+}
+
+function renderCommands() {
+    const root = document.getElementById("commands-root");
+    if (!root) return;
+
+    COMMANDS.forEach(group => {
+        const sec = document.createElement("div");
+        sec.className = "cmd-section";
+
+        const title = document.createElement("div");
+        title.className = "cmd-section-title";
+        title.textContent = group.section;
+        sec.appendChild(title);
+
+        group.items.forEach(item => {
+            const row = document.createElement("div");
+            row.className = "cmd-item";
+
+            const badge = document.createElement("div");
+            badge.className = "cmd-badge";
+
+            if (item.combo) {
+                // Multi-button combo
+                item.combo.forEach((c, i) => {
+                    if (i > 0) {
+                        const plus = document.createElement("span");
+                        plus.textContent = "+";
+                        plus.style.cssText = "color:#888;font-size:0.75em;font-weight:700;margin:0 1px;";
+                        badge.appendChild(plus);
+                    }
+                    const isBtn = c.startsWith("btn_");
+                    const short = isBtn ? c.replace("btn_", "").toUpperCase() : c.replace("dpad_", "").toUpperCase();
+                    const cls = isBtn ? c.replace("btn_", "") : "dpad";
+                    badge.appendChild(cmdChip(short, cls));
+                });
+            } else if (item.buttons) {
+                // Single button
+                const short = item.buttons[0].replace("btn_", "").toUpperCase();
+                const cls = item.buttons[0].replace("btn_", "");
+                badge.appendChild(cmdChip(short, cls));
+                if (item.hold) {
+                    const hl = document.createElement("span");
+                    hl.textContent = "(hold)";
+                    hl.style.cssText = "font-size:0.6em;color:#888;margin-left:2px;";
+                    badge.appendChild(hl);
+                }
+            } else {
+                // Axis / steer / trigger
+                badge.appendChild(cmdChip(item.chip || item.label, "dpad"));
+            }
+
+            row.appendChild(badge);
+
+            const desc = document.createElement("span");
+            desc.className = "cmd-desc";
+            desc.textContent = item.desc;
+            row.appendChild(desc);
+
+            // Event handlers
+            if (item.combo) {
+                row.addEventListener("mousedown", e => { e.preventDefault(); execCombo(item.combo, true); });
+                row.addEventListener("mouseup", e => { e.preventDefault(); execCombo(item.combo, false); });
+                row.addEventListener("mouseleave", () => execCombo(item.combo, false));
+                row.addEventListener("touchstart", e => { e.preventDefault(); execCombo(item.combo, true); }, { passive: false });
+                row.addEventListener("touchend", e => { e.preventDefault(); execCombo(item.combo, false); }, { passive: false });
+                row.addEventListener("touchcancel", () => execCombo(item.combo, false));
+            } else if (item.buttons) {
+                row.addEventListener("mousedown", e => { e.preventDefault(); sendButton(item.buttons[0], true); });
+                row.addEventListener("mouseup", e => { e.preventDefault(); sendButton(item.buttons[0], false); });
+                row.addEventListener("mouseleave", () => sendButton(item.buttons[0], false));
+                row.addEventListener("touchstart", e => { e.preventDefault(); sendButton(item.buttons[0], true); }, { passive: false });
+                row.addEventListener("touchend", e => { e.preventDefault(); sendButton(item.buttons[0], false); }, { passive: false });
+                row.addEventListener("touchcancel", () => sendButton(item.buttons[0], false));
+            } else if (item.action === "dpad_right") {
+                row.addEventListener("mousedown", e => { e.preventDefault(); setDpad("right", true); });
+                row.addEventListener("mouseup", e => { e.preventDefault(); setDpad("right", false); });
+                row.addEventListener("mouseleave", () => setDpad("right", false));
+                row.addEventListener("touchstart", e => { e.preventDefault(); setDpad("right", true); }, { passive: false });
+                row.addEventListener("touchend", e => { e.preventDefault(); setDpad("right", false); }, { passive: false });
+                row.addEventListener("touchcancel", () => setDpad("right", false));
+            }
+
+            sec.appendChild(row);
+        });
+
+        root.appendChild(sec);
+    });
+}
+
+function execCombo(actions, pressed) {
+    actions.forEach(a => {
+        if (a.startsWith("btn_")) {
+            sendButton(a, pressed);
+        } else if (a.startsWith("dpad_")) {
+            setDpad(a.replace("dpad_", ""), pressed);
         }
     });
-    refreshPassthroughStatus();
-    // Poll passthrough status every 3s
-    setInterval(refreshPassthroughStatus, 3000);
+}
+
+// Render commands on page load
+document.addEventListener("DOMContentLoaded", renderCommands);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    try { refreshStatusTab(); } catch (e) {}
+    try { statusTabInterval = setInterval(refreshStatusTab, 3000); } catch (e) {}
+    try { loadConfig(); } catch (e) {}
+    try { initChart(); } catch (e) {}
+    try {
+        refreshStreamStatus().then(() => {
+            const statusIndicator = document.getElementById('stream-status-indicator');
+            if (statusIndicator && statusIndicator.textContent.includes('Streaming')) {
+                startStreamDataPolling();
+            }
+        });
+    } catch (e) {}
+    try { refreshPassthroughStatus(); } catch (e) {}
+    try { setInterval(refreshPassthroughStatus, 3000); } catch (e) {}
 });

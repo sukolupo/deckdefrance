@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>deckdefrance — Play</title>
+    <link rel="stylesheet" href="/static/style.css?v=24">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #ccc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        .play-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px;
+            background: rgba(0,0,0,0.3);
+            flex-shrink: 0;
+        }
+        .play-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .play-home-btn {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 1.2em;
+            line-height: 1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .play-home-btn:hover {
+            background: rgba(102,126,234,0.15);
+        }
+        .play-header h1 {
+            font-size: 0.85em;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .play-header-right {
+            display: flex;
+            gap: 6px;
+        }
+        .drawer-toggle {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75em;
+            font-weight: 600;
+            cursor: pointer;
+            background: transparent;
+            color: #888;
+            transition: background 0.15s, color 0.15s;
+        }
+        .drawer-toggle:hover {
+            background: rgba(102,126,234,0.15);
+            color: #667eea;
+        }
+        .drawer-toggle.open {
+            background: #667eea;
+            color: #fff;
+        }
+
+        /* Controller view — always visible */
+        #controller-view {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Override xbox layout — left-aligned, fill screen */
+        .xbox {
+            max-width: none;
+            margin: 0;
+            width: 100%;
+        }
+        .xbox-stats {
+            max-width: none;
+            margin: 0;
+            justify-content: flex-start;
+        }
+        .xbox-body {
+            justify-content: flex-start;
+            gap: 20px;
+        }
+        .xbox-col-mid {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100%;
+            padding-top: 10px;
+        }
+
+        /* Drawer overlay */
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            z-index: 10;
+        }
+        .drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Commands drawer panel */
+        .commands-drawer {
+            position: fixed;
+            top: 0;
+            right: -340px;
+            width: 320px;
+            height: 100%;
+            background: #1e1e2e;
+            z-index: 11;
+            transition: right 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+        }
+        .commands-drawer.open {
+            right: 0;
+        }
+        .commands-drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid #333;
+            flex-shrink: 0;
+        }
+        .commands-drawer-header h2 {
+            color: #667eea;
+            font-size: 1em;
+            font-weight: 700;
+        }
+        .commands-drawer-close {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 1.3em;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .commands-drawer-close:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .commands-drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px 40px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Commands styling inside drawer */
+        .commands-drawer-body .cmd-section-title { font-size: 0.9em; margin-bottom: 8px; }
+        .commands-drawer-body .cmd-item {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            margin-bottom: 6px;
+            margin-right: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+            width: auto;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background 0.1s, transform 0.1s;
+        }
+        .commands-drawer-body .cmd-item:active {
+            background: rgba(255,255,255,0.12);
+            transform: scale(0.97);
+        }
+        .commands-drawer-body .cmd-desc { font-size: 0.78em; color: #bbb; flex: none; white-space: nowrap; }
+        .commands-drawer-body .cmd-chip { font-size: 0.6em; min-width: 24px; height: 20px; border-radius: 4px; }
+        .commands-drawer-body .cmd-badge { gap: 3px; flex-shrink: 0; }
+        .commands-drawer-body .cmd-subtitle { font-size: 0.75em; margin-bottom: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="play-header">
+        <div class="play-header-left">
+            <a href="/" class="play-home-btn">&larr;</a>
+            <h1>deckdefrance</h1>
+        </div>
+        <div class="play-header-right">
+            <button class="drawer-toggle" id="drawer-toggle">&#9776; Commands</button>
+        </div>
+    </div>
+
+    <!-- Drawer overlay -->
+    <div class="drawer-overlay" id="drawer-overlay"></div>
+
+    <!-- Commands drawer panel -->
+    <div class="commands-drawer" id="commands-drawer">
+        <div class="commands-drawer-header">
+            <h2>Tour de France Controls</h2>
+            <button class="commands-drawer-close" id="drawer-close">&times;</button>
+        </div>
+        <div class="commands-drawer-body">
+            <p class="cmd-subtitle">Tap any action to send the button press to the game.</p>
+            <div id="commands-root"></div>
+        </div>
+    </div>
+
+    <!-- Controller view -->
+    <div id="controller-view">
+        <div class="xbox">
+            <div class="xbox-stats">
+                <span>Power <b id="play-power">0</b>W</span>
+                <span>Cadence <b id="play-cadence">0</b>RPM</span>
+                <span>Trigger <b id="play-trigger">0</b>/255</span>
+            </div>
+            <div class="xbox-shoulder">
+                <button class="xbox-bumper" data-btn="btn_lb">LB</button>
+                <button class="xbox-bumper" data-btn="btn_rb">RB</button>
+            </div>
+            <div class="xbox-body">
+                <div class="xbox-col xbox-col-left">
+                    <div class="xbox-stick-area">
+                        <div class="joystick-base" id="play-joystick-base">
+                            <div class="joystick-thumb" id="play-joystick-thumb"></div>
+                        </div>
+                        <div class="xbox-stick-labels">
+                            <span id="play-joy-x">0.00</span> , <span id="play-joy-y">0.00</span>
+                        </div>
+                    </div>
+                    <div class="xbox-dpad">
+                        <button data-dpad="up">&#9650;</button>
+                        <button data-dpad="left">&#9668;</button>
+                        <div disabled></div>
+                        <button data-dpad="right">&#9654;</button>
+                        <button data-dpad="down">&#9660;</button>
+                    </div>
+                    <button class="xbox-click" data-btn="btn_l3">L3</button>
+                </div>
+                <div class="xbox-col xbox-col-mid">
+                    <div class="xbox-nav">
+                        <button class="xbox-nav-btn" data-btn="btn_select">Select</button>
+                        <button class="xbox-guide" data-btn="btn_mode">&#x2295;</button>
+                        <button class="xbox-nav-btn" data-btn="btn_start">Start</button>
+                    </div>
+                </div>
+                <div class="xbox-col xbox-col-right">
+                    <div class="xbox-face">
+                        <button class="xbox-face-btn xbox-y" data-btn="btn_y">Y</button>
+                        <button class="xbox-face-btn xbox-x" data-btn="btn_x">X</button>
+                        <button class="xbox-face-btn xbox-b" data-btn="btn_b">B</button>
+                        <button class="xbox-face-btn xbox-a" data-btn="btn_a">A</button>
+                    </div>
+                    <button class="xbox-click" data-btn="btn_r3">R3</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const drawerToggle = document.getElementById('drawer-toggle');
+    const drawer = document.getElementById('commands-drawer');
+    const overlay = document.getElementById('drawer-overlay');
+    const closeBtn = document.getElementById('drawer-close');
+
+    function openDrawer() {
+        drawer.classList.add('open');
+        overlay.classList.add('open');
+        drawerToggle.classList.add('open');
+    }
+
+    function closeDrawer() {
+        drawer.classList.remove('open');
+        overlay.classList.remove('open');
+        drawerToggle.classList.remove('open');
+    }
+
+    drawerToggle.addEventListener('click', () => {
+        if (drawer.classList.contains('open')) {
+            closeDrawer();
+        } else {
+            openDrawer();
+        }
+    });
+
+    overlay.addEventListener('click', closeDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    </script>
+    <script src="/static/app.js?v=24"></script>
+</body>
+</html>

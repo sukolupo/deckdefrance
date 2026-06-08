@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deckdefrance - Tacx Trainer Control</title>
-    <link rel="stylesheet" href="/static/style.css?v=18">
+    <link rel="stylesheet" href="/static/style.css?v=24">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -17,9 +17,11 @@
             <button class="nav-btn" data-tab="control">Control</button>
             <button class="nav-btn" data-tab="discover">Discover</button>
             <button class="nav-btn" data-tab="play">Play</button>
+            <button class="nav-btn" data-tab="commands">Commands</button>
             <button class="nav-btn" data-tab="steer">Steer</button>
             <button class="nav-btn" data-tab="config">Configuration</button>
             <button class="nav-btn" data-tab="test">Test Connection</button>
+            <a href="/play" class="nav-btn nav-play-link">&#x25B6; Full Screen</a>
         </nav>
 
         <!-- Status Tab -->
@@ -196,6 +198,13 @@
                     <p>Scanning...</p>
                 </div>
             </div>
+        </div>
+
+        <!-- Commands Tab -->
+        <div id="commands" class="tab-content">
+            <h2>Tour de France Controls</h2>
+            <p class="cmd-subtitle">Tap any action to send the button press to the game.</p>
+            <div id="commands-root"></div>
         </div>
 
         <!-- Steer Tab -->
@@ -425,6 +434,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=17"></script>
+    <script src="/static/app.js?v=24"></script>
 </body>
 </html>

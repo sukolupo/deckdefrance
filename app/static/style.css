@@ -64,6 +64,20 @@ h1 {
     border-bottom-color: #667eea;
 }
 
+.nav-play-link {
+    color: #2d6a4f;
+    border-bottom-color: transparent;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 8px;
+}
+
+.nav-play-link:hover {
+    color: #40916c;
+    border-bottom-color: #40916c;
+}
+
 /* Tab Content */
 .tab-content {
     display: none;
@@ -1017,6 +1031,88 @@ h1 {
 .xbox-click[data-btn="btn_l3"] { background: #5a8de0; }
 .xbox-click[data-btn="btn_r3"] { background: #e08a5a; }
 .xbox-click:active { transform: scale(0.9); }
+
+/* Commands Tab */
+.cmd-section {
+    margin-bottom: 24px;
+}
+
+.cmd-section-title {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #667eea;
+}
+
+.cmd-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: background 0.1s, transform 0.1s;
+    touch-action: manipulation;
+}
+
+.cmd-item:active {
+    background: #e2e8f0;
+    transform: scale(0.98);
+}
+
+.cmd-badge {
+    flex-shrink: 0;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.cmd-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 5px;
+    font-size: 0.7em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cmd-chip-a { background: #48bb78; color: #fff; }
+.cmd-chip-b { background: #f56565; color: #fff; }
+.cmd-chip-x { background: #4299e1; color: #fff; }
+.cmd-chip-y { background: #ecc94b; color: #744210; }
+.cmd-chip-lb { background: #5a8de0; color: #fff; }
+.cmd-chip-rb { background: #e08a5a; color: #fff; }
+.cmd-chip-l3 { background: #5a8de0; color: #fff; }
+.cmd-chip-r3 { background: #e08a5a; color: #fff; }
+.cmd-chip-select { background: #718096; color: #fff; }
+.cmd-chip-start { background: #718096; color: #fff; }
+.cmd-chip-guide { background: #333; color: #aaa; }
+.cmd-chip-dpad { background: #555; color: #eee; }
+.cmd-chip-rt { background: #666; color: #eee; }
+.cmd-chip-lt { background: #666; color: #eee; }
+.cmd-chip-stick { background: #555; color: #eee; }
+
+.cmd-desc {
+    font-size: 0.85em;
+    color: #444;
+    flex: 1;
+    line-height: 1.3;
+}
+
+.cmd-subtitle {
+    color: #666;
+    font-size: 0.85em;
+    margin-bottom: 16px;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
