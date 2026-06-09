@@ -6,8 +6,8 @@ Tacx turbo trainer → Tour de France controller mapper. Connects to a Tacx smar
 
 - **Backend**: FastAPI (Python 3.12) via uvicorn, port 8000
 - **BLE**: `bleak` + `pycycling` (Cycling Power Service)
-- **Virtual gamepad**: `python-uinput` — Xbox 360 controller vendor/product IDs (0x045e/0x028e), 8 axes + 7 buttons, configurable mappings via `apply_mappings()`
-- **Passthrough**: `evdev` — reads Steam Deck controller (event15) and forwards to our uinput device, so the game sees one combined controller
+- **Virtual gamepad**: `evdev.UInput` — Xbox 360 controller vendor/product IDs (0x045e/0x028e), 8 axes + 11 buttons, shared by both Tacx mapper and external controller merge
+- **Controller Merge**: `evdev` — reads events from a paired Bluetooth controller and forwards them (with axis range scaling) to the same virtual gamepad, so the game sees one combined controller
 - **Frontend**: Vanilla HTML/CSS/JS + Chart.js (CDN)
 - **Dependencies**: `requirements.txt`, Docker optional
 
@@ -22,12 +22,18 @@ deckdefrance/
 │   ├── mapper.py        # Tacx → controller mapping logic + uinput device
 │   ├── config.py        # JSON config read/write + FTP presets
 │   ├── discovery.py     # BLE device discovery via BleakScanner
-│   ├── passthrough.py   # Steam Deck controller evdev passthrough to uinput
+│   ├── passthrough.py   # Steam Deck controller evdev passthrough to uinput (deprecated — see merge)
+│   ├── merge.py         # External Bluetooth controller merge into shared uinput device
+│   ├── config.py        # JSON config read/write + FTP presets
 │   └── static/
 │       ├── index.html   # Web UI (6 tabs: Status, Control, Discover, Steer, Config, Test)
-│       ├── app.js       # Frontend logic — polling, chart, config, mappings, virtual joystick, passthrough
-│       └── style.css    # Purple gradient theme
-├── start.sh             # Production startup script (kills old, starts single worker)
+│       ├── play.html    # Full-screen touch gamepad page (PWA start page)
+│       ├── app.js       # Frontend logic — polling, chart, config, mappings, virtual joystick, merge, commands
+│       ├── style.css    # Purple gradient theme
+│       ├── manifest.json # PWA manifest
+│       ├── icon.svg     # PWA app icon
+│       └── sw.js        # Service worker (caches static assets)
+├── start.sh
 ├── config.json          # Persistent config (live: F0:C5:70:96:A9:3B)
 ├── requirements.txt
 ├── Dockerfile
@@ -44,6 +50,8 @@ deckdefrance/
 | POST | `/api/config` | Save config (partial update, `exclude_none`) |
 | POST | `/api/map` | Test mapping (power, cadence, resistance → buttons/gear/mode) |
 | POST | `/api/joystick` | Set left stick position (`{ x, y }` in -1 to 1 range) |
+| POST | `/api/dpad` | Set D-pad axes (`{ x, y }` in -1/0/1) |
+| POST | `/api/button` | Press/release a virtual button `{ button, pressed }` |
 | POST | `/api/test-trainer` | Test BLE connection to configured MAC |
 | POST | `/api/discover-tacx` | BLE scan for Tacx trainers (5s timeout) |
 | POST | `/api/discover-all` | BLE scan for all devices |
@@ -52,11 +60,17 @@ deckdefrance/
 | GET | `/api/stream-status` | `{ streaming: bool, message: str }` |
 | GET | `/api/stream-data` | `{ watts, cadence, timestamp }` |
 | GET | `/api/stream-log` | Array of last 100 `{ time, watts, cadence }` entries |
-| GET | `/api/passthrough/status` | `{ active: bool, source, device_name }` |
-| GET | `/api/passthrough/devices` | List available gamepad evdev devices (excludes Tacx pad) |
-| POST | `/api/passthrough/start` | Start passthrough (auto-detect Steam Deck or provide `source_path`) |
-| POST | `/api/passthrough/stop` | Stop passthrough |
-| POST | `/api/button` | Press/release a virtual button `{ button, pressed }` |
+| GET | `/api/merge/devices` | List available gamepad evdev devices for merging |
+| GET | `/api/merge/status` | `{ active: bool, source, device_name }` |
+| POST | `/api/merge/start` | Start merge from `source_path` query param |
+| POST | `/api/merge/stop` | Stop merge |
+| GET | `/play` | Full-screen touch gamepad page |
+
+## PWA
+
+- `manifest.json`, `icon.svg`, `sw.js` in `/static/`
+- Service worker caches all pages and static assets on first load
+- Installable on Android Chrome ("Add to Home Screen") — opens `/play` in standalone mode
 
 ## Streaming Data Flow
 
@@ -176,20 +190,47 @@ docker compose up --build
 
 The app runs on the Steam Deck. The configured Tacx MAC is `F0:C5:70:96:A9:3B`.
 
-## Controller Passthrough Flow
+## Controller Merge (Bluetooth + Tacx)
+
+Merge a paired Bluetooth controller with the Tacx trainer into one combined virtual gamepad. Both inputs go to the same device — the game sees a single "Tacx Virtual Gamepad".
+
+### Setup
+
+1. **Pair your Bluetooth controller** with the Steam Deck via System Settings → Bluetooth
+2. Open the **Merge** tab in the web UI
+3. Click **Scan** to list available gamepad devices
+4. Select your controller from the list (may appear as "Microsoft X-Box 360 pad N" — these are Steam virtual wrappers; try each one)
+5. Click **Start Merge**
+6. In the game, select **Tacx Virtual Gamepad** as the controller
+
+Both the Tacx trainer mappings and your Bluetooth controller inputs now feed into one virtual gamepad.
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/merge/devices` | List available gamepad evdev devices for merging |
+| GET | `/api/merge/status` | `{ active: bool, source, device_name }` |
+| POST | `/api/merge/start?source_path=/dev/input/eventN` | Start merge from a device path |
+| POST | `/api/merge/stop` | Stop merge |
+
+### How It Works
 
 ```
-Steam Deck Controller (event15, evdev)
-  → passthrough.run_passthrough() (async evdev reader)
-    → reads EV_ABS (sticks, triggers, dpad) and EV_KEY (buttons)
-    → converts ranges: sticks -32767..32767 → 0..65535, triggers 0..255 unchanged
-    → emits to our uinput device (same _BUTTON_CODES / _EMIT_EVTS)
-  → Combined with trainer power mappings on the same uinput device
+Bluetooth Controller (evdev)
+  → merge._run_merge() (async evdev reader)
+    → reads axis & button events
+    → scales axis values from source range (e.g. -32767..32767) to our device range (0..65535)
+    → writes to our shared UInput device
+  → Combined with Tacx trainer power mappings on the same device
   → Game sees one controller (Tacx Virtual Gamepad) with ALL inputs
-
-Note: passthrough and trainer streaming can operate independently or simultaneously.
-Both write to the same uinput device — last value wins for each axis/button.
 ```
+
+### Notes
+
+- The Steam virtual Xbox pads (`0x28de:0x11ff`) are created by Steam Input and may wrap your Bluetooth controller. Try each one if you don't see your controller's real name.
+- Axis values are dynamically scaled from the source device's absinfo ranges to match our device's declared ranges.
+- Merge and trainer streaming operate independently — use both at the same time or separately.
 
 ## Known Issues / Notes
 

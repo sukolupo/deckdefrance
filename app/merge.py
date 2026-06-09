@@ -14,11 +14,12 @@ _TARGET_ABS_RANGES = {
     ecodes.ABS_Y: (0, 65535),
     ecodes.ABS_RX: (0, 65535),
     ecodes.ABS_RY: (0, 65535),
-    ecodes.ABS_Z: (0, 255),
-    ecodes.ABS_RZ: (0, 255),
     ecodes.ABS_HAT0X: (-1, 1),
     ecodes.ABS_HAT0Y: (-1, 1),
 }
+
+# Axes the Tacx mapper owns exclusively — merge skips these to avoid overwriting
+_TACX_RESERVED_AXES = {ecodes.ABS_Z, ecodes.ABS_RZ}
 
 # Merge state
 _merge_task: asyncio.Task | None = None
@@ -65,6 +66,8 @@ async def _run_merge(source_path: str):
             if event.type == 0:
                 continue
             if event.type == ecodes.EV_ABS:
+                if event.code in _TACX_RESERVED_AXES:
+                    continue
                 tgt_range = _TARGET_ABS_RANGES.get(event.code)
                 src_range = source_abs_ranges.get(event.code)
                 if tgt_range and src_range:

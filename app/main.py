@@ -134,8 +134,9 @@ async def set_joystick(request: JoystickRequest):
     y = max(-1.0, min(1.0, request.y))
     x_val = int((x + 1.0) / 2.0 * 65535)
     y_val = int((y + 1.0) / 2.0 * 65535)
-    emit(ecodes.ABS_X, x_val)
-    emit(ecodes.ABS_Y, y_val)
+    device.write(ecodes.EV_ABS, ecodes.ABS_X, x_val)
+    device.write(ecodes.EV_ABS, ecodes.ABS_Y, y_val)
+    device.syn()
     return {"x": x, "y": y}
 
 
@@ -144,8 +145,9 @@ async def set_dpad(request: DpadRequest):
     """Set dpad position (-1, 0, or 1 per axis)."""
     x = max(-1, min(1, request.x))
     y = max(-1, min(1, request.y))
-    emit(ecodes.ABS_HAT0X, x)
-    emit(ecodes.ABS_HAT0Y, y)
+    device.write(ecodes.EV_ABS, ecodes.ABS_HAT0X, x)
+    device.write(ecodes.EV_ABS, ecodes.ABS_HAT0Y, y)
+    device.syn()
     return {"x": x, "y": y}
 
 

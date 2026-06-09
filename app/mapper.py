@@ -41,10 +41,10 @@ _EMIT_EVTS: Dict[str, int] = {**_AXIS_CODES, **_BUTTON_CODES}
 _CAP = {
     ecodes.EV_KEY: list(_BUTTON_CODES.values()),
     ecodes.EV_ABS: [
-        (ecodes.ABS_X, (0, 0, 65535, 0, 0, 0)),
-        (ecodes.ABS_Y, (0, 0, 65535, 0, 0, 0)),
-        (ecodes.ABS_RX, (0, 0, 65535, 0, 0, 0)),
-        (ecodes.ABS_RY, (0, 0, 65535, 0, 0, 0)),
+        (ecodes.ABS_X, (32768, 0, 65535, 0, 0, 0)),
+        (ecodes.ABS_Y, (32768, 0, 65535, 0, 0, 0)),
+        (ecodes.ABS_RX, (32768, 0, 65535, 0, 0, 0)),
+        (ecodes.ABS_RY, (32768, 0, 65535, 0, 0, 0)),
         (ecodes.ABS_Z, (0, 0, 255, 0, 0, 0)),
         (ecodes.ABS_RZ, (0, 0, 255, 0, 0, 0)),
         (ecodes.ABS_HAT0X, (0, -1, 1, 0, 0, 0)),
