@@ -1,0 +1,89 @@
+"controller_mappings"
+{
+	"version"		"3"
+	"game" "Tacx Virtual Gamepad"
+	"title" "#Title"
+	"description" "#Description"
+	"controller_type"		"controller_xbox360"
+	"localization"
+	{
+		"english"
+		{
+			"title"		"Tacx Gamepad"
+			"description"		"Template for the Tacx Virtual Gamepad. Maps ABS_RZ (right trigger), ABS_Z (left trigger), left stick, and A/B/X/Y/Select/Start buttons to standard gamepad inputs."
+		}
+	}
+	"group"
+	{
+		"id"		"0"
+		"mode"		"four_buttons"
+		"inputs"
+		{
+			"button_a"		{ "activators" { "Full_Press" { "bindings" { "binding"		"xinput_button A" } } } }
+			"button_b"		{ "activators" { "Full_Press" { "bindings" { "binding"		"xinput_button B" } } } }
+			"button_x"		{ "activators" { "Full_Press" { "bindings" { "binding"		"xinput_button X" } } } }
+			"button_y"		{ "activators" { "Full_Press" { "bindings" { "binding"		"xinput_button Y" } } } }
+		}
+	}
+	"group"
+	{
+		"id"		"1"
+		"mode"		"trigger"
+		"inputs"
+		{
+			"click"
+			{
+				"activators" { "Full_Press" { "bindings" { "binding"		"xinput_button TRIGGER_LEFT" } } }
+			}
+		}
+		"settings" { "output_trigger"		"1" }
+	}
+	"group"
+	{
+		"id"		"2"
+		"mode"		"trigger"
+		"inputs"
+		{
+			"click"
+			{
+				"activators" { "Full_Press" { "bindings" { "binding"		"xinput_button TRIGGER_RIGHT" } } }
+			}
+		}
+		"settings" { "output_trigger"		"2" }
+	}
+	"group"
+	{
+		"id"		"3"
+		"mode"		"joystick_move"
+		"inputs"
+		{
+			"click"
+			{
+				"activators" { "Full_Press" { "bindings" { "binding"		"xinput_button JOYSTICK_LEFT" } } }
+			}
+		}
+	}
+	"group"
+	{
+		"id"		"4"
+		"mode"		"switches"
+		"inputs"
+		{
+			"button_escape"		{ "activators" { "Full_Press" { "bindings" { "binding"		"xinput_button start" } } } }
+			"button_menu"		{ "activators" { "Full_Press" { "bindings" { "binding"		"xinput_button select" } } } }
+		}
+	}
+	"preset"
+	{
+		"id"		"0"
+		"name"		"Default"
+		"group_source_bindings"
+		{
+			"0"		"button_diamond active"
+			"1"		"left_trigger active"
+			"2"		"right_trigger active"
+			"3"		"joystick active"
+			"4"		"switch active"
+		}
+	}
+}

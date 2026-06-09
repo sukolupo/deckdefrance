@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>deckdefrance - Tacx Trainer Control</title>
+    <link rel="stylesheet" href="/static/style.css?v=29">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>deckdefrance</h1>
+        <p class="subtitle">Tacx Turbo Trainer to Tour de France Controller Mapper</p>
+
+        <nav class="nav-tabs">
+            <button class="nav-btn active" data-tab="status">Status</button>
+            <button class="nav-btn" data-tab="control">Control</button>
+            <button class="nav-btn" data-tab="discover">Discover</button>
+            <button class="nav-btn" data-tab="play">Play</button>
+            <button class="nav-btn" data-tab="commands">Commands</button>
+            <button class="nav-btn" data-tab="steer">Steer</button>
+            <button class="nav-btn" data-tab="config">Configuration</button>
+            <button class="nav-btn" data-tab="test">Test Connection</button>
+            <button class="nav-btn" data-tab="merge">Merge</button>
+            <a href="/play" class="nav-btn nav-play-link">&#x25B6; Full Screen</a>
+        </nav>
+
+        <!-- Status Tab -->
+        <div id="status" class="tab-content active">
+            <h2>System Status</h2>
+            <div class="status-card">
+                <div class="status-item">
+                    <span class="status-label">Service:</span>
+                    <span id="status-service" class="status-value status-ok">✓ Running</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Streaming:</span>
+                    <span id="status-streaming" class="status-value">Checking...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Trainer MAC:</span>
+                    <span id="status-mac" class="status-value">Checking...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Stream Message:</span>
+                    <span id="status-message" class="status-value">—</span>
+                </div>
+            </div>
+            <button class="btn btn-refresh" onclick="refreshStatusTab()">Refresh Status</button>
+        </div>
+
+        <!-- Control Tab -->
+        <div id="control" class="tab-content">
+            <h2>Trainer Control & Streaming</h2>
+            <div class="control-section">
+                <h3>Stream Status</h3>
+                <div class="status-card">
+                    <div class="status-item">
+                        <span class="status-label">Streaming:</span>
+                        <span id="stream-status-indicator" class="status-value">Stopped</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Message:</span>
+                        <span id="stream-status-message" class="status-value">Ready to start</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Stream Controls</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-success" id="stream-start-btn" onclick="startStreaming()">
+                        <span id="stream-start-text">Start Streaming</span>
+                    </button>
+                    <button class="btn btn-danger" id="stream-stop-btn" onclick="stopStreaming()" disabled>
+                        <span id="stream-stop-text">Stop Streaming</span>
+                    </button>
+                </div>
+                <button class="btn btn-secondary" onclick="refreshStreamStatus()" style="margin-top: 10px;">Refresh Status</button>
+            </div>
+
+            <div class="control-section">
+                <h3>Real-time Data</h3>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="enable-debug" checked>
+                    Enable live chart &amp; debug display
+                </label>
+                <div class="stream-data-display">
+                    <div class="stream-data-item">
+                        <span class="stream-data-label">Power Output:</span>
+                        <span id="stream-power" class="stream-data-value">0</span>
+                        <span class="stream-data-unit">W</span>
+                    </div>
+                    <div class="stream-data-item">
+                        <span class="stream-data-label">Cadence:</span>
+                        <span id="stream-cadence" class="stream-data-value">0</span>
+                        <span class="stream-data-unit">RPM</span>
+                    </div>
+                    <div class="stream-data-item">
+                        <span class="stream-data-label">Controller Output:</span>
+                        <span id="stream-trigger" class="stream-data-value">0</span>
+                        <span class="stream-data-unit">/255</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Live Chart</h3>
+                <div class="chart-container">
+                    <canvas id="stream-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Stream Message Log</h3>
+                <div id="stream-log-container" class="stream-log">
+                    <p class="stream-log-empty">No messages yet. Start streaming to see data.</p>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Information</h3>
+                <p>
+                    Once streaming is started, the app will continuously read power data from your Tacx trainer 
+                    and send it to the virtual controller for Tour de France to process.
+                </p>
+                <ul>
+                    <li>Make sure your trainer is configured and selected in the Configuration tab</li>
+                    <li>The trainer should be connected and ready before starting the stream</li>
+                    <li>The virtual gamepad will emit power values on the Right Trigger (ABS_RZ)</li>
+                    <li>Click "Stop Streaming" to safely disconnect and stop data transmission</li>
+                    <li>Use <strong>Controller Passthrough</strong> to forward Steam Deck inputs through the Tacx pad so the game sees one combined controller</li>
+                </ul>
+            </div>
+
+            <!-- Controller Passthrough -->
+            <div class="control-section">
+                <h3>Controller Passthrough</h3>
+                <p style="color:#666;line-height:1.5;margin-bottom:15px;">
+                    Forward Steam Deck controller inputs through the Tacx Virtual Gamepad. 
+                    This lets the game see <strong>one controller</strong> that combines Steam Deck controls + trainer power.
+                    Configure the game in Steam to use the "Tacx Virtual Gamepad" as player 1.
+                </p>
+                <div class="status-card">
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span id="passthrough-status" class="status-value status-err">Inactive</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Source Device:</span>
+                        <span id="passthrough-device" class="status-value status-muted">Not started</span>
+                    </div>
+                    <div class="status-item" id="passthrough-debug-row" style="display:none;">
+                        <span class="status-label">Events Forwarded:</span>
+                        <span id="passthrough-events" class="status-value">0</span>
+                    </div>
+                </div>
+                <div class="control-buttons">
+                    <button class="btn btn-success" id="passthrough-start-btn" onclick="startPassthrough()">
+                        Start Passthrough
+                    </button>
+                    <button class="btn btn-danger" id="passthrough-stop-btn" onclick="stopPassthrough()" disabled>
+                        Stop Passthrough
+                    </button>
+                </div>
+                <button class="btn btn-secondary" onclick="refreshPassthroughStatus()" style="margin-top:10px;">Refresh Status</button>
+                <div id="passthrough-message" class="message"></div>
+                <details style="margin-top:15px;font-size:0.9em;color:#888;">
+                    <summary>Debug: Event Counts</summary>
+                    <pre id="passthrough-debug-json" style="font-size:0.75em;max-height:200px;overflow:auto;background:#1a1a2e;padding:8px;border-radius:4px;margin-top:5px;">Waiting for data...</pre>
+                </details>
+            </div>
+        </div>
+
+        <!-- Discovery Tab -->
+        <div id="discover" class="tab-content">
+            <h2>Discover Tacx Trainers</h2>
+            
+            <div class="discovery-section">
+                <p>Scan for available Tacx trainers on Bluetooth. Make sure your trainer is powered on and in pairing mode.</p>
+                <button class="btn btn-success" onclick="discoverTacxTrainers()">
+                    <span id="discover-btn-text">Scan for Tacx Trainers</span>
+                </button>
+            </div>
+
+            <div class="discovery-section">
+                <h3>Discovered Devices</h3>
+                <div id="discovered-list" class="device-list">
+                    <p>No devices discovered yet. Click "Scan for Tacx Trainers" to start scanning.</p>
+                </div>
+            </div>
+
+            <div class="discovery-section">
+                <h3>All Bluetooth Devices</h3>
+                <button class="btn btn-secondary" onclick="discoverAllDevices()">
+                    <span id="discover-all-btn-text">Scan All Devices</span>
+                </button>
+                <div id="all-devices-list" class="device-list" style="margin-top: 15px; display: none;">
+                    <p>Scanning...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commands Tab -->
+        <div id="commands" class="tab-content">
+            <h2>Tour de France Controls</h2>
+            <p class="cmd-subtitle">Tap any action to send the button press to the game.</p>
+            <div id="commands-root"></div>
+        </div>
+
+        <!-- Steer Tab -->
+        <div id="steer" class="tab-content">
+            <h2>Virtual Steering</h2>
+            <p style="color:#666;margin-bottom:20px;line-height:1.5;">
+                Drag the thumbstick to steer the in-game character. Release to snap back to center.
+            </p>
+            <div class="joystick-area">
+                <div class="joystick-base" id="joystick-base">
+                    <div class="joystick-thumb" id="joystick-thumb"></div>
+                </div>
+                <div class="controller-buttons">
+                    <div class="ctrl-row ctrl-top">
+                        <button class="ctrl-btn ctrl-guide" data-btn="btn_mode">&#x2295;</button>
+                    </div>
+                    <div class="ctrl-row ctrl-mid">
+                        <button class="ctrl-btn ctrl-select" data-btn="btn_select">Select</button>
+                        <div class="ctrl-diamond">
+                            <button class="ctrl-btn ctrl-dia ctrl-y" data-btn="btn_y">Y</button>
+                            <button class="ctrl-btn ctrl-dia ctrl-x" data-btn="btn_x">X</button>
+                            <button class="ctrl-btn ctrl-dia ctrl-b" data-btn="btn_b">B</button>
+                            <button class="ctrl-btn ctrl-dia ctrl-a" data-btn="btn_a">A</button>
+                        </div>
+                        <button class="ctrl-btn ctrl-start" data-btn="btn_start">Start</button>
+                    </div>
+                </div>
+            </div>
+            <div class="joystick-coords">
+                <div>X: <span id="joy-x">0.00</span></div>
+                <div>Y: <span id="joy-y">0.00</span></div>
+            </div>
+        </div>
+
+        <!-- Play Tab -->
+        <div id="play" class="tab-content">
+            <div class="xbox">
+                <!-- Stats bar -->
+                <div class="xbox-stats">
+                    <span>Power <b id="play-power">0</b>W</span>
+                    <span>Cadence <b id="play-cadence">0</b>RPM</span>
+                    <span>Trigger <b id="play-trigger">0</b>/255</span>
+                </div>
+
+                <!-- Shoulder buttons -->
+                <div class="xbox-shoulder">
+                    <button class="xbox-bumper" data-btn="btn_lb">LB</button>
+                    <button class="xbox-bumper" data-btn="btn_rb">RB</button>
+                </div>
+
+                <!-- Main body -->
+                <div class="xbox-body">
+                    <!-- Left column: stick on top, d-pad below -->
+                    <div class="xbox-col xbox-col-left">
+                        <div class="xbox-stick-area">
+                            <div class="joystick-base" id="play-joystick-base">
+                                <div class="joystick-thumb" id="play-joystick-thumb"></div>
+                            </div>
+                            <div class="xbox-stick-labels">
+                                <span id="play-joy-x">0.00</span> , <span id="play-joy-y">0.00</span>
+                            </div>
+                        </div>
+                        <div class="xbox-dpad">
+                            <button data-dpad="up">▲</button>
+                            <button data-dpad="left">◀</button>
+                            <div disabled></div>
+                            <button data-dpad="right">▶</button>
+                            <button data-dpad="down">▼</button>
+                        </div>
+                        <button class="xbox-click" data-btn="btn_l3">L3</button>
+                    </div>
+
+                    <!-- Right column: face buttons on top, nav below -->
+                    <div class="xbox-col xbox-col-right">
+                        <div class="xbox-face">
+                            <button class="xbox-face-btn xbox-y" data-btn="btn_y">Y</button>
+                            <button class="xbox-face-btn xbox-x" data-btn="btn_x">X</button>
+                            <button class="xbox-face-btn xbox-b" data-btn="btn_b">B</button>
+                            <button class="xbox-face-btn xbox-a" data-btn="btn_a">A</button>
+                        </div>
+                        <div class="xbox-nav">
+                            <button class="xbox-nav-btn" data-btn="btn_select">Select</button>
+                            <button class="xbox-guide" data-btn="btn_mode">&#x2295;</button>
+                            <button class="xbox-nav-btn" data-btn="btn_start">Start</button>
+                        </div>
+                        <button class="xbox-click" data-btn="btn_r3">R3</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Tab -->
+        <div id="config" class="tab-content">
+            <h2>Configuration Parameters</h2>
+            <form id="config-form" class="config-form">
+                <div class="form-group">
+                    <label for="tacx-mac">Tacx MAC Address:</label>
+                    <input type="text" id="tacx-mac" name="tacx_mac_address" placeholder="XX:XX:XX:XX:XX:XX">
+                    <small>Bluetooth MAC address of your Tacx trainer</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="max-watts">Max Target Watts:</label>
+                    <input type="number" id="max-watts" name="max_target_watts" min="100" max="500" step="10">
+                    <small>Power threshold for mapping (default: 300W)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="cadence-threshold">Cadence Threshold (RPM):</label>
+                    <input type="number" id="cadence-threshold" name="cadence_threshold" min="50" max="150" step="5">
+                    <small>RPM threshold for button actions (default: 95)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="power-race">Power Threshold - Race Mode (W):</label>
+                    <input type="number" id="power-race" name="power_threshold_race" min="50" max="300" step="10">
+                    <small>Power level to activate race mode (default: 150W)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="power-button-a">Power Threshold - Button A (W):</label>
+                    <input type="number" id="power-button-a" name="power_threshold_button_a" min="100" max="400" step="10">
+                    <small>Power level to trigger button A (default: 250W)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="gear-multiplier">Gear Multiplier:</label>
+                    <input type="number" id="gear-multiplier" name="gear_multiplier" min="1" max="5" step="0.5">
+                    <small>Multiplier for resistance to gear conversion (default: 2.0)</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Configuration</button>
+                    <button type="button" class="btn btn-secondary" onclick="loadConfig()">Reset to Saved</button>
+                </div>
+            </form>
+            <div id="config-message" class="message"></div>
+
+            <h3 style="margin-top: 30px;">FTP Presets</h3>
+            <p style="color: #666; margin-bottom: 10px; line-height: 1.5;">
+                Quickly set power thresholds based on your fitness level.  
+                Based on Functional Threshold Power (average watts over 1 hour).
+            </p>
+            <div id="preset-container" class="preset-grid"></div>
+
+            <h3 style="margin-top: 30px;">Controller Mappings</h3>
+            <p style="color: #666; margin-bottom: 15px; line-height: 1.5;">
+                Map trainer metrics to controller outputs. Each row maps a source (power, cadence)
+                to a controller target (trigger, joystick axis, or button). Axes invert automatically
+                (higher metric = more push). For buttons, set a threshold.
+            </p>
+            <div id="mappings-container">
+                <div class="mapping-row mapping-header">
+                    <span>Source</span>
+                    <span>Target</span>
+                    <span>Threshold</span>
+                    <span></span>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="addMappingRow()" style="margin-top: 10px;">+ Add Mapping</button>
+        </div>
+
+        <!-- Test Tab -->
+        <div id="test" class="tab-content">
+            <h2>Tacx Trainer Connection Test</h2>
+            
+            <div class="test-section">
+                <h3>Connection Status</h3>
+                <div class="test-result" id="connection-test">
+                    <span class="status-badge pending">Not tested</span>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>Sample Power Mapping</h3>
+                <div class="test-inputs">
+                    <div class="test-input-group">
+                        <label for="test-power">Power (Watts):</label>
+                        <input type="number" id="test-power" min="0" max="500" value="200" step="10">
+                    </div>
+                    <div class="test-input-group">
+                        <label for="test-cadence">Cadence (RPM):</label>
+                        <input type="number" id="test-cadence" min="0" max="200" value="90" step="5">
+                    </div>
+                    <div class="test-input-group">
+                        <label for="test-resistance">Resistance:</label>
+                        <input type="number" id="test-resistance" min="0" max="10" value="3.5" step="0.5">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="testMapping()">Test Mapping</button>
+            </div>
+
+            <div class="test-section">
+                <h3>Mapping Result</h3>
+                <div id="mapping-result" class="result-box">
+                    <p>Results will appear here...</p>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>Virtual Controller Buttons</h3>
+                <p style="color:#666;margin-bottom:8px;">Test individual buttons on the Tacx Virtual Gamepad.</p>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-secondary" data-btn="btn_a">A</button>
+                    <button class="btn btn-secondary" data-btn="btn_b">B</button>
+                    <button class="btn btn-secondary" data-btn="btn_x">X</button>
+                    <button class="btn btn-secondary" data-btn="btn_y">Y</button>
+                    <button class="btn btn-secondary" data-btn="btn_lb">LB</button>
+                    <button class="btn btn-secondary" data-btn="btn_rb">RB</button>
+                    <button class="btn btn-secondary" data-btn="btn_l3">L3</button>
+                    <button class="btn btn-secondary" data-btn="btn_r3">R3</button>
+                    <button class="btn btn-secondary" data-btn="btn_select">Select</button>
+                    <button class="btn btn-secondary" data-btn="btn_start">Start</button>
+                    <button class="btn btn-secondary" data-btn="btn_mode">Guide</button>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>Test Trainer Connection</h3>
+                <button class="btn btn-success" onclick="testConnection()">
+                    <span id="test-btn-text">Test Tacx Connection</span>
+                </button>
+                <div id="connection-result" class="result-box" style="margin-top: 15px; display: none;">
+                    <p id="connection-message"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Merge Tab -->
+        <div id="merge" class="tab-content">
+            <h2>Controller Merge</h2>
+            <p style="color:#888;margin-bottom:15px;">
+                Merge an external Bluetooth controller with your Tacx virtual gamepad.
+                Both inputs go to the same device so the game sees one combined controller.
+            </p>
+
+            <div class="test-section">
+                <h3>Scan for Controllers</h3>
+                <button class="btn btn-primary" onclick="scanMergeDevices()">Scan</button>
+                <div id="merge-devices-list" class="result-box" style="margin-top:10px;">
+                    <p style="color:#888;">Click Scan to find gamepad devices.</p>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>Merge Status</h3>
+                <div class="test-result" id="merge-status">
+                    <span class="status-badge idle">Inactive</span>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:10px;">
+                    <button class="btn btn-success" id="merge-start-btn" onclick="startMerge()">Start Merge</button>
+                    <button class="btn btn-danger" id="merge-stop-btn" onclick="stopMerge()" disabled>Stop Merge</button>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>How It Works</h3>
+                <p style="color:#888;font-size:0.85em;line-height:1.6;">
+                    1. Pair your Bluetooth controller with the Steam Deck (Settings &rarr; Bluetooth).<br>
+                    2. Click <strong>Scan</strong> to find it in the list below.<br>
+                    3. Select it and click <strong>Start Merge</strong>.<br>
+                    4. The controller's inputs and the Tacx trainer's mapped outputs now feed into one virtual gamepad.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=29"></script>
+</body>
+</html>

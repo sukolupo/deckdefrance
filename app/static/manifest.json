@@ -1,0 +1,19 @@
+{
+  "name": "deckdefrance",
+  "short_name": "deckdefrance",
+  "description": "Tacx Turbo Trainer to Tour de France Controller Mapper",
+  "start_url": "/play",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1a1a2e",
+  "theme_color": "#667eea",
+  "categories": ["sports", "lifestyle"],
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
