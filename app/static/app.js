@@ -1211,3 +1211,10 @@ document.addEventListener('DOMContentLoaded', () => {
     try { refreshPassthroughStatus(); } catch (e) {}
     try { setInterval(refreshPassthroughStatus, 3000); } catch (e) {}
 });
+
+// Register service worker for PWA support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+    });
+}
