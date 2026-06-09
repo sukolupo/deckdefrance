@@ -9,9 +9,11 @@ from collections import deque
 
 from bleak import BleakClient
 from pycycling.cycling_power_service import CyclingPowerService
-from .mapper import map_tacx_to_controller, apply_mappings, device, _BUTTON_CODES
+from evdev import ecodes
+from .mapper import map_tacx_to_controller, apply_mappings, device, emit, _BUTTON_CODES
 from .config import get_config, update_config, FTP_PRESETS
 from .discovery import discover_tacx_trainers, discover_all_devices
+from .merge import start_merge, stop_merge, get_merge_status
 from .passthrough import (
     start_passthrough,
     stop_passthrough,
@@ -19,7 +21,6 @@ from .passthrough import (
     get_passthrough_debug,
     list_controller_devices,
 )
-import uinput
 
 app = FastAPI(title="deckdefrance", version="0.1.0")
 
@@ -133,8 +134,8 @@ async def set_joystick(request: JoystickRequest):
     y = max(-1.0, min(1.0, request.y))
     x_val = int((x + 1.0) / 2.0 * 65535)
     y_val = int((y + 1.0) / 2.0 * 65535)
-    device.emit(uinput.ABS_X, x_val)
-    device.emit(uinput.ABS_Y, y_val)
+    emit(ecodes.ABS_X, x_val)
+    emit(ecodes.ABS_Y, y_val)
     return {"x": x, "y": y}
 
 
@@ -143,8 +144,8 @@ async def set_dpad(request: DpadRequest):
     """Set dpad position (-1, 0, or 1 per axis)."""
     x = max(-1, min(1, request.x))
     y = max(-1, min(1, request.y))
-    device.emit(uinput.ABS_HAT0X, x)
-    device.emit(uinput.ABS_HAT0Y, y)
+    emit(ecodes.ABS_HAT0X, x)
+    emit(ecodes.ABS_HAT0Y, y)
     return {"x": x, "y": y}
 
 
@@ -154,7 +155,7 @@ async def press_button(request: ButtonRequest):
     code = _BUTTON_CODES.get(request.button)
     if not code:
         return {"status": "error", "message": f"Unknown button: {request.button}"}
-    device.emit(code, 1 if request.pressed else 0)
+    emit(code, 1 if request.pressed else 0)
     return {"status": "ok", "button": request.button, "pressed": request.pressed}
 
 
@@ -190,6 +191,30 @@ async def passthrough_status():
 async def passthrough_debug():
     """Get passthrough debug info (event counts, source exists, etc)."""
     return get_passthrough_debug()
+
+
+@app.get("/api/merge/devices")
+async def merge_devices():
+    """List gamepad evdev devices available for merging."""
+    return {"devices": list_controller_devices()}
+
+
+@app.get("/api/merge/status")
+async def merge_status():
+    """Get current merge status."""
+    return get_merge_status()
+
+
+@app.post("/api/merge/start")
+async def merge_start(source_path: str):
+    """Start merging a source controller into the shared virtual gamepad."""
+    return await start_merge(source_path)
+
+
+@app.post("/api/merge/stop")
+async def merge_stop():
+    """Stop the merge."""
+    return await stop_merge()
 
 
 @app.post("/api/test-trainer")

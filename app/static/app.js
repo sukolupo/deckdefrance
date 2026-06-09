@@ -1041,6 +1041,99 @@ async function stopPassthrough() {
     }
 }
 
+// Merge Tab — External Bluetooth Controller Merge
+let _mergeDevice = '';
+
+async function scanMergeDevices() {
+    const listEl = document.getElementById('merge-devices-list');
+    listEl.innerHTML = '<p style="color:#888;">Scanning...</p>';
+    try {
+        const res = await fetch('/api/merge/devices');
+        const data = await res.json();
+        if (!data.devices || data.devices.length === 0) {
+            listEl.innerHTML = '<p style="color:#888;">No gamepad devices found. Pair a Bluetooth controller first.</p>';
+            return;
+        }
+        let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+        data.devices.forEach(dev => {
+            const path = dev.path;
+            const selected = _mergeDevice === path ? 'checked' : '';
+            const info = [dev.phys || dev.uniq].filter(Boolean).join(' — ') || `${dev.vendor}:${dev.product}`;
+            const isSteamVirtual = dev.vendor === '0x28de' && dev.product === '0x11ff';
+            html += '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#1e1e2e;border-radius:6px;cursor:pointer;' + (isSteamVirtual ? 'opacity:0.7;' : '') + '">';
+            html += `<input type="radio" name="merge-device" value="${path}" ${selected} onchange="_mergeDevice=this.value">`;
+            html += `<div style="flex:1;">`;
+            html += `<div style="font-weight:600;">${dev.name}</div>`;
+            html += `<div style="color:#888;font-size:0.75em;">${path} — ${info}</div>`;
+            html += `</div>`;
+            if (isSteamVirtual) {
+                html += `<span style="color:#666;font-size:0.65em;">Steam virtual</span>`;
+            }
+            html += '</label>';
+        });
+        html += '</div>';
+        listEl.innerHTML = html;
+    } catch (e) {
+        listEl.innerHTML = `<p style="color:#f56565;">Error: ${e.message}</p>`;
+    }
+}
+
+async function refreshMergeStatus() {
+    try {
+        const res = await fetch('/api/merge/status');
+        const data = await res.json();
+        const statusEl = document.getElementById('merge-status');
+        const startBtn = document.getElementById('merge-start-btn');
+        const stopBtn = document.getElementById('merge-stop-btn');
+
+        if (data.active) {
+            statusEl.innerHTML = `<span class="status-badge connected">Active</span> &mdash; ${data.device_name || data.source}`;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        } else {
+            statusEl.innerHTML = '<span class="status-badge idle">Inactive</span>';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+    } catch (e) {
+        console.error('Error refreshing merge status:', e);
+    }
+}
+
+async function startMerge() {
+    if (!_mergeDevice) {
+        alert('Select a controller from the scan list first.');
+        return;
+    }
+    const startBtn = document.getElementById('merge-start-btn');
+    startBtn.disabled = true;
+    try {
+        const res = await fetch('/api/merge/start?source_path=' + encodeURIComponent(_mergeDevice), { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'started' || data.status === 'already_active') {
+            refreshMergeStatus();
+        } else {
+            alert(data.message || 'Failed to start merge');
+            startBtn.disabled = false;
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+        startBtn.disabled = false;
+    }
+}
+
+async function stopMerge() {
+    const stopBtn = document.getElementById('merge-stop-btn');
+    stopBtn.disabled = true;
+    try {
+        await fetch('/api/merge/stop', { method: 'POST' });
+        refreshMergeStatus();
+    } catch (e) {
+        alert('Error: ' + e.message);
+        stopBtn.disabled = false;
+    }
+}
+
 // Commands Tab — TDF Official Controls
 const COMMANDS = [
     { section: "Normal Race", items: [

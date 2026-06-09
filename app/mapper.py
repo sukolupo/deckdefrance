@@ -3,72 +3,82 @@ from typing import Dict, Any, List
 import asyncio
 from bleak import BleakClient
 from pycycling.cycling_power_service import CyclingPowerService
-import uinput
+from evdev import UInput, ecodes
 
-TACX_MAC_ADDRESS = "XX:XX:XX:XX:XX:XX"  # Change to your Tacx MAC
+TACX_MAC_ADDRESS = "XX:XX:XX:XX:XX:XX"
 
-# uinput event codes are (type, code) tuples, e.g. (3, 2) for ABS_Z
-# For device creation, axes need a range tuple appended: (type, code, min, max, fuzz, flat)
-# For emit(), only the base (type, code) is used.
-# Triggers: 0-255 range (standard for Xbox 360 triggers)
-# Sticks: 0-65535 range (standard for Xbox 360 analog sticks)
-
-_AXIS_DESCRIPTORS: Dict[str, tuple] = {
-    "left_stick_x":  uinput.ABS_X + (0, 65535, 0, 0),
-    "left_stick_y":  uinput.ABS_Y + (0, 65535, 0, 0),
-    "right_stick_x": uinput.ABS_RX + (0, 65535, 0, 0),
-    "right_stick_y": uinput.ABS_RY + (0, 65535, 0, 0),
-    # Note: on Linux, SDL/games swap ABS_Z and ABS_RZ.
-    # ABS_Z is read as left trigger, ABS_RZ as right trigger.
-    "right_trigger": uinput.ABS_RZ + (0, 255, 0, 0),
-    "left_trigger":  uinput.ABS_Z + (0, 255, 0, 0),
-    # D-pad as axes for passthrough
-    "dpad_x": uinput.ABS_HAT0X + (-1, 1, 0, 0),
-    "dpad_y": uinput.ABS_HAT0Y + (-1, 1, 0, 0),
+# Button event codes
+_BUTTON_CODES: Dict[str, int] = {
+    "btn_a": ecodes.BTN_A,
+    "btn_b": ecodes.BTN_B,
+    "btn_x": ecodes.BTN_X,
+    "btn_y": ecodes.BTN_Y,
+    "btn_select": ecodes.BTN_SELECT,
+    "btn_start": ecodes.BTN_START,
+    "btn_mode": ecodes.BTN_MODE,
+    "btn_lb": ecodes.BTN_TL,
+    "btn_rb": ecodes.BTN_TR,
+    "btn_l3": ecodes.BTN_THUMBL,
+    "btn_r3": ecodes.BTN_THUMBR,
 }
 
-_BUTTON_CODES: Dict[str, tuple] = {
-    "btn_a": uinput.BTN_A,
-    "btn_b": uinput.BTN_B,
-    "btn_x": uinput.BTN_X,
-    "btn_y": uinput.BTN_Y,
-    "btn_select": uinput.BTN_SELECT,
-    "btn_start": uinput.BTN_START,
-    "btn_mode": uinput.BTN_MODE,
-    "btn_lb": uinput.BTN_TL,
-    "btn_rb": uinput.BTN_TR,
-    "btn_l3": uinput.BTN_THUMBL,
-    "btn_r3": uinput.BTN_THUMBR,
+# Axis event codes
+_AXIS_CODES: Dict[str, int] = {
+    "left_stick_x":  ecodes.ABS_X,
+    "left_stick_y":  ecodes.ABS_Y,
+    "right_stick_x": ecodes.ABS_RX,
+    "right_stick_y": ecodes.ABS_RY,
+    "right_trigger": ecodes.ABS_RZ,
+    "left_trigger":  ecodes.ABS_Z,
+    "dpad_x": ecodes.ABS_HAT0X,
+    "dpad_y": ecodes.ABS_HAT0Y,
 }
 
-# All targets (name -> base type+code tuple for emitting)
-_EMIT_EVTS: Dict[str, tuple] = {
-    "left_stick_x":  uinput.ABS_X,
-    "left_stick_y":  uinput.ABS_Y,
-    "right_stick_x": uinput.ABS_RX,
-    "right_stick_y": uinput.ABS_RY,
-    # Swapped to match SDL/game expectations (ABS_RZ = right trigger)
-    "right_trigger": uinput.ABS_RZ,
-    "left_trigger":  uinput.ABS_Z,
-    "dpad_x": uinput.ABS_HAT0X,
-    "dpad_y": uinput.ABS_HAT0Y,
-    **_BUTTON_CODES,
+# All targets (name -> event code)
+_EMIT_EVTS: Dict[str, int] = {**_AXIS_CODES, **_BUTTON_CODES}
+
+# evdev UInput capabilities
+_CAP = {
+    ecodes.EV_KEY: list(_BUTTON_CODES.values()),
+    ecodes.EV_ABS: [
+        (ecodes.ABS_X, (0, 0, 65535, 0, 0, 0)),
+        (ecodes.ABS_Y, (0, 0, 65535, 0, 0, 0)),
+        (ecodes.ABS_RX, (0, 0, 65535, 0, 0, 0)),
+        (ecodes.ABS_RY, (0, 0, 65535, 0, 0, 0)),
+        (ecodes.ABS_Z, (0, 0, 255, 0, 0, 0)),
+        (ecodes.ABS_RZ, (0, 0, 255, 0, 0, 0)),
+        (ecodes.ABS_HAT0X, (0, -1, 1, 0, 0, 0)),
+        (ecodes.ABS_HAT0Y, (0, -1, 1, 0, 0, 0)),
+    ],
 }
 
-events = list(_AXIS_DESCRIPTORS.values()) + list(_BUTTON_CODES.values())
+# Create the shared virtual controller device
+device = UInput(
+    _CAP,
+    name="Tacx Virtual Gamepad",
+    vendor=0x045e,
+    product=0x028e,
+)
+
+# Lookup: event code -> EV_KEY or EV_ABS
+_CODE_TO_TYPE: Dict[int, int] = {}
+for c in _BUTTON_CODES.values():
+    _CODE_TO_TYPE[c] = ecodes.EV_KEY
+for c in _AXIS_CODES.values():
+    _CODE_TO_TYPE[c] = ecodes.EV_ABS
+
+_BTN_CODES_SET = set(_BUTTON_CODES.values())
+
+
+def emit(code: int, value: int):
+    """Write an event to the shared virtual gamepad and sync."""
+    ev_type = _CODE_TO_TYPE.get(code, ecodes.EV_ABS)
+    device.write(ev_type, code, value)
+    device.syn()
+
 
 # Store last-committed button states so we only emit on change
 _last_button_states: Dict[str, bool] = {}
-
-# Create the virtual controller device named "Tacx Virtual Gamepad"
-# Using Xbox 360 vendor/product IDs so Steam Input recognizes it as a gamepad
-device = uinput.Device(
-    events,
-    name="Tacx Virtual Gamepad",
-    vendor=0x045e,   # Microsoft
-    product=0x028e,  # Xbox 360 Controller
-    version=0x0110,
-)
 
 
 def map_tacx_to_controller(trainer_power: float, cadence: float, resistance: float) -> Dict[str, Any]:
@@ -85,22 +95,18 @@ def map_tacx_to_controller(trainer_power: float, cadence: float, resistance: flo
     }
 
 
-# Mapping from source names to value extractors
 _SOURCE_GETTERS = {
     "power": lambda p, c, r: p,
     "cadence": lambda p, c, r: c,
     "resistance": lambda p, c, r: r,
 }
 
-
-# Trigger and stick ranges used for scaling
 _TRIGGER_RANGE = 255
 _STICK_RANGE = 65535
-_STICK_CENTER = _STICK_RANGE // 2  # 32768
+_STICK_CENTER = _STICK_RANGE // 2
 
 
 def _scale(value: float, src_max: float, tgt_max: int) -> int:
-    """Scale source value from 0–src_max to 0–tgt_max."""
     clamped = max(0.0, min(value, src_max))
     if src_max == 0:
         return 0
@@ -108,7 +114,6 @@ def _scale(value: float, src_max: float, tgt_max: int) -> int:
 
 
 def _scale_stick_y(value: float, src_max: float) -> int:
-    """Scale source value for Y-axis stick: 0→center, src_max→full up."""
     clamped = max(0.0, min(value, src_max))
     if src_max == 0:
         return _STICK_CENTER
@@ -117,11 +122,6 @@ def _scale_stick_y(value: float, src_max: float) -> int:
 
 
 def apply_mappings(mappings: List[Dict[str, Any]], watts: float, cadence: float, resistance: float, max_watts: float):
-    """Apply a list of mapping rules to the uinput device.
-    
-    Each mapping: { "source": "power"|"cadence"|"resistance", "target": "<target_name>" }
-    Optional: "threshold" for buttons.
-    """
     global _last_button_states
 
     for mapping in mappings:
@@ -141,7 +141,7 @@ def apply_mappings(mappings: List[Dict[str, Any]], watts: float, cadence: float,
             pressed = value > threshold
             prev = _last_button_states.get(target, False)
             if pressed != prev:
-                device.emit(_BUTTON_CODES[target], 1 if pressed else 0)
+                emit(_BUTTON_CODES[target], 1 if pressed else 0)
                 _last_button_states[target] = pressed
         elif target in _EMIT_EVTS:
             src_max = max_watts if source == "power" else (200 if source == "cadence" else 10)
@@ -151,7 +151,7 @@ def apply_mappings(mappings: List[Dict[str, Any]], watts: float, cadence: float,
                 scaled = _scale(value, src_max, _STICK_RANGE)
             else:
                 scaled = _scale(value, src_max, _TRIGGER_RANGE)
-            device.emit(_EMIT_EVTS[target], scaled)
+            emit(_EMIT_EVTS[target], scaled)
 
 
 def power_data_handler(data):
@@ -160,7 +160,7 @@ def power_data_handler(data):
 
     max_target_watts = 300
     trigger_value = int((min(watts, max_target_watts) / max_target_watts) * 255)
-    device.emit(uinput.ABS_Z, trigger_value)
+    emit(ecodes.ABS_Z, trigger_value)
 
 
 async def run():

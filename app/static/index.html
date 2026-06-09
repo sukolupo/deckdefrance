@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deckdefrance - Tacx Trainer Control</title>
-    <link rel="stylesheet" href="/static/style.css?v=25">
+    <link rel="stylesheet" href="/static/style.css?v=29">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,6 +25,7 @@
             <button class="nav-btn" data-tab="steer">Steer</button>
             <button class="nav-btn" data-tab="config">Configuration</button>
             <button class="nav-btn" data-tab="test">Test Connection</button>
+            <button class="nav-btn" data-tab="merge">Merge</button>
             <a href="/play" class="nav-btn nav-play-link">&#x25B6; Full Screen</a>
         </nav>
 
@@ -436,8 +437,46 @@
                 </div>
             </div>
         </div>
+
+        <!-- Merge Tab -->
+        <div id="merge" class="tab-content">
+            <h2>Controller Merge</h2>
+            <p style="color:#888;margin-bottom:15px;">
+                Merge an external Bluetooth controller with your Tacx virtual gamepad.
+                Both inputs go to the same device so the game sees one combined controller.
+            </p>
+
+            <div class="test-section">
+                <h3>Scan for Controllers</h3>
+                <button class="btn btn-primary" onclick="scanMergeDevices()">Scan</button>
+                <div id="merge-devices-list" class="result-box" style="margin-top:10px;">
+                    <p style="color:#888;">Click Scan to find gamepad devices.</p>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>Merge Status</h3>
+                <div class="test-result" id="merge-status">
+                    <span class="status-badge idle">Inactive</span>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:10px;">
+                    <button class="btn btn-success" id="merge-start-btn" onclick="startMerge()">Start Merge</button>
+                    <button class="btn btn-danger" id="merge-stop-btn" onclick="stopMerge()" disabled>Stop Merge</button>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>How It Works</h3>
+                <p style="color:#888;font-size:0.85em;line-height:1.6;">
+                    1. Pair your Bluetooth controller with the Steam Deck (Settings &rarr; Bluetooth).<br>
+                    2. Click <strong>Scan</strong> to find it in the list below.<br>
+                    3. Select it and click <strong>Start Merge</strong>.<br>
+                    4. The controller's inputs and the Tacx trainer's mapped outputs now feed into one virtual gamepad.
+                </p>
+            </div>
+        </div>
     </div>
 
-    <script src="/static/app.js?v=25"></script>
+    <script src="/static/app.js?v=29"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 import threading
 import evdev
 from evdev import InputDevice, ecodes
-from .mapper import _EMIT_EVTS, device, _BUTTON_CODES
+from .mapper import _EMIT_EVTS, device, _BUTTON_CODES, emit
 
 # Mapping from evdev event codes to our emit targets
 _EVDEV_TO_TARGET = {
@@ -33,6 +33,8 @@ _EVDEV_BTN_TO_TARGET = {
 # Known Steam controller vendor/product IDs
 _STEAM_VENDORS = {0x28de}  # Valve
 _STEAM_PRODUCTS = {0x11ff, 0x1205}  # Xbox 360 pad, Steam Controller
+# Virtual Steam pads — created by Steam Input, no live events
+_STEAM_VIRTUAL_PRODUCTS = {0x11ff}
 _TACX_VENDOR = 0x045e
 _TACX_PRODUCT = 0x028e
 
@@ -107,11 +109,14 @@ def find_steam_controller() -> tuple[str, str] | None:
 
 
 def list_controller_devices() -> list[dict]:
-    """List all joystick/gamepad evdev devices usable as passthrough sources."""
+    """List all joystick/gamepad evdev devices usable as passthrough or merge sources.
+    Excludes our own Tacx virtual device and Steam virtual pads (0x28de/0x11ff).
+    """
     results = []
     for path in evdev.list_devices():
         try:
             dev = InputDevice(path)
+            # Skip our own Tacx virtual device
             if dev.info.vendor == _TACX_VENDOR and dev.info.product == _TACX_PRODUCT:
                 continue
             caps = dev.capabilities()
@@ -122,7 +127,8 @@ def list_controller_devices() -> list[dict]:
                     "name": dev.name,
                     "vendor": f"0x{dev.info.vendor:04x}",
                     "product": f"0x{dev.info.product:04x}",
-                    "phys": dev.phys,
+                    "phys": dev.phys or "",
+                    "uniq": dev.uniq or "",
                 })
         except (PermissionError, OSError):
             continue
@@ -162,20 +168,19 @@ def _forward_event(event, abs_info: dict):
 
         if target in ("left_stick_x", "left_stick_y", "right_stick_x", "right_stick_y"):
             scaled = _scale_stick(event.value, src_min, src_max)
-            device.emit(_EMIT_EVTS[target], scaled)
+            emit(_EMIT_EVTS[target], scaled)
 
         elif target in ("left_trigger", "right_trigger"):
             scaled = _scale_trigger(event.value, src_max)
-            device.emit(_EMIT_EVTS[target], scaled)
+            emit(_EMIT_EVTS[target], scaled)
 
         elif target in ("dpad_x", "dpad_y"):
-            # dpad values are -1, 0, 1 — pass through directly
-            device.emit(_EMIT_EVTS[target], event.value)
+            emit(_EMIT_EVTS[target], event.value)
 
     elif event.type == ecodes.EV_KEY:
         btn_key = _EVDEV_BTN_TO_TARGET.get(event.code)
         if btn_key:
-            device.emit(_BUTTON_CODES[btn_key], event.value)
+            emit(_BUTTON_CODES[btn_key], event.value)
 
 
 def _open_source(path: str):
