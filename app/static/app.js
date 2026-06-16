@@ -494,6 +494,15 @@ async function startStreaming() {
             startBtn.disabled = true;
             stopBtn.disabled = false;
             startStreamDataPolling();
+        } else if (data.status === 'starting') {
+            statusIndicator.innerHTML = '<span class="status-badge idle">⟳ Connecting...</span>';
+            statusMessage.textContent = data.message;
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+            // Poll status in background to update when connected
+            if (!statusPollInterval) {
+                statusPollInterval = setInterval(refreshStreamStatus, 2000);
+            }
         } else {
             statusIndicator.innerHTML = '<span class="status-badge disconnected">✗ Error</span>';
             statusMessage.textContent = data.message;
@@ -562,10 +571,13 @@ async function refreshStreamStatus() {
             statusIndicator.innerHTML = '<span class="status-badge connected">✓ Streaming</span>';
             startBtn.disabled = true;
             stopBtn.disabled = false;
-            // Auto-start polling if streaming is active but polling isn't running
             if (!streamDataInterval) {
                 startStreamDataPolling();
             }
+        } else if (data.connecting) {
+            statusIndicator.innerHTML = '<span class="status-badge idle">⟳ Connecting...</span>';
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
         } else {
             statusIndicator.innerHTML = '<span class="status-badge disconnected">✗ Stopped</span>';
             startBtn.disabled = false;

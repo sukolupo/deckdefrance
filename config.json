@@ -6,7 +6,14 @@
   "power_threshold_button_a": 200.0,
   "gear_multiplier": 2.0,
   "mappings": [
-    { "source": "power", "target": "right_trigger" },
-    { "source": "power", "target": "btn_a", "threshold": 200 }
+    {
+      "source": "power",
+      "target": "right_trigger"
+    },
+    {
+      "source": "power",
+      "target": "btn_a",
+      "threshold": 200
+    }
   ]
 }
