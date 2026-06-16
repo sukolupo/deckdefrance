@@ -13,7 +13,7 @@ from evdev import ecodes
 from .mapper import map_tacx_to_controller, apply_mappings, device, emit, _BUTTON_CODES
 from .config import get_config, update_config, FTP_PRESETS
 from .discovery import discover_tacx_trainers, discover_all_devices
-from .merge import start_merge, stop_merge, get_merge_status
+from .merge import start_merge, stop_merge, get_merge_status, probe_device
 from .passthrough import (
     start_passthrough,
     stop_passthrough,
@@ -213,6 +213,12 @@ async def merge_start(source_path: str):
     return await start_merge(source_path)
 
 
+@app.post("/api/merge/probe")
+async def merge_probe(source_path: str):
+    """Watch a device for events for 3s to help identify which controller it is."""
+    result = await probe_device(source_path)
+    return result
+
 @app.post("/api/merge/stop")
 async def merge_stop():
     """Stop the merge."""
@@ -302,24 +308,34 @@ async def discover_all():
 
 async def stream_trainer_data(mac_address: str):
     """Background task that streams trainer data to the controller.
-    
-    Automatically reconnects on BLE disconnection to handle Tacx sleep/
-    idle timeouts or momentary Bluetooth interference.
+
+    Automatically reconnects on BLE disconnection.
     """
     global streaming_active, streaming_message, last_power_data
     
-    max_retries = 5
+    max_retries = 10
     retry_count = 0
+    disconnect_event: asyncio.Event | None = None
+    
+    def on_disconnect(_client):
+        nonlocal disconnect_event
+        if disconnect_event is not None:
+            disconnect_event.set()
     
     while streaming_active and retry_count < max_retries:
         try:
-            async with BleakClient(mac_address, timeout=20.0) as client:
-                if not client.is_connected:
-                    await client.connect()
-                
+            disconnect_event = asyncio.Event()
+            client = BleakClient(
+                mac_address,
+                timeout=20.0,
+                disconnected_callback=on_disconnect,
+            )
+            await client.connect()
+            
+            try:
                 streaming_message = f"Connected to {mac_address}"
                 streaming_active = True
-                retry_count = 0  # reset on successful connect
+                retry_count = 0
                 
                 trainer = CyclingPowerService(client)
 
@@ -327,30 +343,22 @@ async def stream_trainer_data(mac_address: str):
                 mappings = cfg.get("mappings", [])
                 max_watts = cfg.get("max_target_watts", 300)
 
-                last_notify = time.time()
-
                 def power_handler(data):
-                    """Handle incoming power data from trainer (synchronous callback)."""
-                    nonlocal last_notify
                     global last_power_data, streaming_log
                     try:
-                        last_notify = time.time()
                         watts = data.instantaneous_power
                         cadence = getattr(data, 'crank_revolutions', 0)
                         now = time.time()
-                        
                         last_power_data = {
                             "watts": watts,
                             "cadence": cadence,
                             "timestamp": now,
                         }
-                        
                         streaming_log.append({
                             "time": now,
                             "watts": watts,
                             "cadence": cadence,
                         })
-                        
                         apply_mappings(mappings, watts, cadence, 0, max_watts)
                     except Exception as e:
                         print(f"Error in power handler: {e}")
@@ -358,13 +366,31 @@ async def stream_trainer_data(mac_address: str):
                 trainer.set_cycling_power_measurement_handler(power_handler)
                 await trainer.enable_cycling_power_measurement_notifications()
                 
-                # Keep streaming until cancelled or connection lost
+                # Stay connected — no data timeout. Await disconnect signal.
+                disconnect_event.clear()
                 while streaming_active:
-                    await asyncio.sleep(0.5)
-                    # If no notification for 15s, assume connection dropped
-                    if time.time() - last_notify > 15:
-                        streaming_message = "No data from trainer for 15s — reconnecting..."
+                    try:
+                        await asyncio.wait_for(
+                            asyncio.shield(disconnect_event.wait()),
+                            timeout=1.0,
+                        )
+                        streaming_message = "BLE connection lost — reconnecting..."
                         break
+                    except asyncio.TimeoutError:
+                        pass
+            
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                err = str(e) or type(e).__name__
+                streaming_message = f"Stream error: {err} (retry {retry_count + 1}/{max_retries})"
+                break
+            finally:
+                disconnect_event.set()
+                try:
+                    await client.disconnect()
+                except Exception:
+                    pass
         
         except asyncio.CancelledError:
             break
@@ -372,7 +398,7 @@ async def stream_trainer_data(mac_address: str):
             retry_count += 1
             streaming_message = f"Stream error: {str(e)} (retry {retry_count}/{max_retries})"
             if retry_count < max_retries:
-                await asyncio.sleep(2)
+                await asyncio.sleep(3)
             else:
                 streaming_message = "Stream stopped — max retries reached"
     

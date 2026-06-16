@@ -73,6 +73,7 @@ deckdefrance/
 | GET | `/api/stream-log` | Array of last 100 `{ time, watts, cadence }` entries |
 | GET | `/api/merge/devices` | List available gamepad evdev devices for merging |
 | GET | `/api/merge/status` | `{ active: bool, source, device_name }` |
+| POST | `/api/merge/probe` | Watch a device for 3s and return any events detected (identify which controller is which) |
 | POST | `/api/merge/start` | Start merge from `source_path` query param |
 | POST | `/api/merge/stop` | Stop merge |
 | GET | `/play` | Full-screen touch gamepad page |

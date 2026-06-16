@@ -1,27 +1,25 @@
 // Tab Navigation
-document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const tabName = e.target.getAttribute('data-tab');
-        switchTab(tabName);
-    });
-});
-
 function switchTab(tabName) {
     // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
 
-    // Deactivate all buttons
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
+    // Deactivate all sidebar items
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
     });
 
     // Show selected tab
-    document.getElementById(tabName).classList.add('active');
+    const tabEl = document.getElementById(tabName);
+    if (tabEl) tabEl.classList.add('active');
 
-    // Activate selected button
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    // Activate selected sidebar item
+    const sidebarItem = document.querySelector(`.sidebar-item[data-tab="${tabName}"]`);
+    if (sidebarItem) sidebarItem.classList.add('active');
+
+    // Close sidebar
+    closeSidebar();
 
     // Auto-refresh status tab when active
     if (tabName === 'status') {
@@ -41,6 +39,28 @@ function switchTab(tabName) {
         loadPresets();
     }
 }
+
+// Sidebar Navigation
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebar-overlay').classList.add('open');
+}
+
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+document.getElementById('hamburger-btn').addEventListener('click', openSidebar);
+document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
+document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
+
+document.querySelectorAll('.sidebar-item[data-tab]').forEach(item => {
+    item.addEventListener('click', (e) => {
+        const tabName = e.currentTarget.getAttribute('data-tab');
+        switchTab(tabName);
+    });
+});
 
 // FTP Presets
 async function loadPresets() {
@@ -1070,24 +1090,62 @@ async function scanMergeDevices() {
         data.devices.forEach(dev => {
             const path = dev.path;
             const selected = _mergeDevice === path ? 'checked' : '';
-            const info = [dev.phys || dev.uniq].filter(Boolean).join(' — ') || `${dev.vendor}:${dev.product}`;
             const isSteamVirtual = dev.vendor === '0x28de' && dev.product === '0x11ff';
-            html += '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#1e1e2e;border-radius:6px;cursor:pointer;' + (isSteamVirtual ? 'opacity:0.7;' : '') + '">';
-            html += `<input type="radio" name="merge-device" value="${path}" ${selected} onchange="_mergeDevice=this.value">`;
-            html += `<div style="flex:1;">`;
-            html += `<div style="font-weight:600;">${dev.name}</div>`;
-            html += `<div style="color:#888;font-size:0.75em;">${path} — ${info}</div>`;
-            html += `</div>`;
+            const infoParts = [];
+            if (dev.phys) infoParts.push(`phys: ${dev.phys}`);
+            if (dev.uniq) infoParts.push(`uniq: ${dev.uniq}`);
+            infoParts.push(`${dev.vendor}:${dev.product}`);
+            const info = infoParts.join(' | ');
+            html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:' + (isSteamVirtual ? '#1a1a2e' : '#1e1e2e') + ';border-radius:6px;border:1px solid ' + (isSteamVirtual ? '#2a2a3e' : '#333') + ';">';
+            html += `<input type="radio" name="merge-device" value="${path}" ${selected} onchange="_mergeDevice=this.value" style="flex-shrink:0;">`;
+            html += `<div style="flex:1;min-width:0;">`;
+            html += `<div style="font-weight:600;display:flex;gap:8px;align-items:center;">`;
+            html += `<span>${dev.name}</span>`;
             if (isSteamVirtual) {
-                html += `<span style="color:#666;font-size:0.65em;">Steam virtual</span>`;
+                html += `<span style="color:#666;font-size:0.65em;background:#2a2a3e;padding:2px 8px;border-radius:4px;white-space:nowrap;">Steam virtual</span>`;
             }
-            html += '</label>';
+            html += `</div>`;
+            html += `<div style="color:#888;font-size:0.7em;word-break:break-all;margin-top:2px;">${path}</div>`;
+            html += `<div style="color:#666;font-size:0.7em;word-break:break-all;margin-top:1px;">${info}</div>`;
+            html += `</div>`;
+            html += `<button class="btn-small btn-secondary" style="flex-shrink:0;padding:4px 10px;font-size:0.7em;" onclick="detectMergeDevice('${path}', this)">Detect</button>`;
+            html += '</div>';
         });
         html += '</div>';
         listEl.innerHTML = html;
     } catch (e) {
         listEl.innerHTML = `<p style="color:#f56565;">Error: ${e.message}</p>`;
     }
+}
+
+async function detectMergeDevice(path, btn) {
+    const origText = btn.textContent;
+    btn.textContent = 'Watching...';
+    btn.disabled = true;
+    try {
+        const res = await fetch('/api/merge/probe?source_path=' + encodeURIComponent(path), { method: 'POST' });
+        const data = await res.json();
+        if (data.detected && data.events.length > 0) {
+            const ev = data.events.slice(0, 3).map(e => `${e.code}=${e.value}`).join(', ');
+            btn.textContent = `✅ ${data.events.length} events`;
+            btn.style.background = '#38a169';
+            btn.style.color = '#fff';
+        } else {
+            btn.textContent = '❌ No activity';
+            btn.style.background = '#e53e3e';
+            btn.style.color = '#fff';
+        }
+    } catch (e) {
+        btn.textContent = '❌ Error';
+        btn.style.background = '#e53e3e';
+        btn.style.color = '#fff';
+    }
+    setTimeout(() => {
+        btn.textContent = origText;
+        btn.disabled = false;
+        btn.style.background = '';
+        btn.style.color = '';
+    }, 3000);
 }
 
 async function refreshMergeStatus() {

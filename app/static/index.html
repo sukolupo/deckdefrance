@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deckdefrance - Tacx Trainer Control</title>
-    <link rel="stylesheet" href="/static/style.css?v=30">
+    <link rel="stylesheet" href="/static/style.css?v=32">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,21 +13,32 @@
 </head>
 <body>
     <div class="container">
-        <h1>deckdefrance</h1>
+        <div class="header-bar">
+            <button class="hamburger" id="hamburger-btn" aria-label="Open menu">&#9776;</button>
+            <h1>deckdefrance</h1>
+        </div>
         <p class="subtitle">Tacx Turbo Trainer to Tour de France Controller Mapper</p>
 
-        <nav class="nav-tabs">
-            <button class="nav-btn active" data-tab="status">Status</button>
-            <button class="nav-btn" data-tab="control">Control</button>
-            <button class="nav-btn" data-tab="discover">Discover</button>
-            <button class="nav-btn" data-tab="play">Play</button>
-            <button class="nav-btn" data-tab="commands">Commands</button>
-            <button class="nav-btn" data-tab="steer">Steer</button>
-            <button class="nav-btn" data-tab="config">Configuration</button>
-            <button class="nav-btn" data-tab="test">Test Connection</button>
-            <button class="nav-btn" data-tab="merge">Merge</button>
-            <a href="/play" class="nav-btn nav-play-link">&#x25B6; Full Screen</a>
-        </nav>
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">deckdefrance</span>
+                <button class="sidebar-close" id="sidebar-close">&times;</button>
+            </div>
+            <div class="sidebar-items">
+                <a class="sidebar-item active" data-tab="status">Status</a>
+                <a class="sidebar-item" data-tab="control">Streaming &amp; Data</a>
+                <a class="sidebar-item" data-tab="play">Gamepad</a>
+                <a class="sidebar-item" data-tab="commands">Commands</a>
+                <a class="sidebar-item" data-tab="steer">Steer</a>
+                <a class="sidebar-item" data-tab="config">Configuration</a>
+                <a class="sidebar-item" data-tab="discover">Discover</a>
+                <a class="sidebar-item" data-tab="test">Test</a>
+                <a class="sidebar-item" data-tab="merge">Merge</a>
+                <a class="sidebar-item sidebar-fullscreen" href="/play">&#x25B6; Full Screen</a>
+            </div>
+        </div>
 
         <!-- Status Tab -->
         <div id="status" class="tab-content active">
@@ -477,6 +488,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=30"></script>
+    <script src="/static/app.js?v=32"></script>
 </body>
 </html>
