@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deckdefrance - Tacx Trainer Control</title>
-    <link rel="stylesheet" href="/static/style.css?v=32">
+    <link rel="stylesheet" href="/static/style.css?v=33">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#ffd700">
+    <link rel="icon" href="/static/deckdefrance_logo.png" sizes="any" type="image/png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="header-bar">
             <button class="hamburger" id="hamburger-btn" aria-label="Open menu">&#9776;</button>
+            <img src="/static/deckdefrance_logo.png" alt="deckdefrance" style="height:40px;width:auto;">
             <h1>deckdefrance</h1>
         </div>
         <p class="subtitle">Tacx Turbo Trainer to Tour de France Controller Mapper</p>
@@ -23,6 +25,7 @@
 
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
+                <img src="/static/deckdefrance_logo.png" alt="deckdefrance" style="height:28px;width:auto;">
                 <span class="sidebar-title">deckdefrance</span>
                 <button class="sidebar-close" id="sidebar-close">&times;</button>
             </div>
@@ -182,7 +185,7 @@
                 <div id="passthrough-message" class="message"></div>
                 <details style="margin-top:15px;font-size:0.9em;color:#888;">
                     <summary>Debug: Event Counts</summary>
-                    <pre id="passthrough-debug-json" style="font-size:0.75em;max-height:200px;overflow:auto;background:#1a1a2e;padding:8px;border-radius:4px;margin-top:5px;">Waiting for data...</pre>
+                    <pre id="passthrough-debug-json" style="font-size:0.75em;max-height:200px;overflow:auto;background:#1a1a1a;padding:8px;border-radius:4px;margin-top:5px;">Waiting for data...</pre>
                 </details>
             </div>
         </div>
@@ -488,6 +491,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=32"></script>
+    <script src="/static/app.js?v=33"></script>
 </body>
 </html>

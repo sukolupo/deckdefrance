@@ -644,8 +644,8 @@ function initChart() {
                 {
                     label: 'Cadence (RPM)',
                     data: [],
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderColor: '#ffd700',
+                    backgroundColor: 'rgba(255, 215, 0, 0.1)',
                     borderWidth: 2,
                     pointRadius: 0,
                     tension: 0.3,
@@ -709,7 +709,7 @@ function initChart() {
                     title: {
                         display: true,
                         text: 'RPM',
-                        color: '#667eea',
+                        color: '#ffd700',
                     },
                     min: 0,
                     max: 150,
@@ -717,7 +717,7 @@ function initChart() {
                         drawOnChartArea: false,
                     },
                     ticks: {
-                        color: '#667eea',
+                        color: '#ffd700',
                     },
                 },
                 y_trigger: {
