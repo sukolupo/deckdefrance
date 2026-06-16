@@ -315,24 +315,13 @@ async def stream_trainer_data(mac_address: str):
     
     max_retries = 10
     retry_count = 0
-    disconnect_event: asyncio.Event | None = None
-    
-    def on_disconnect(_client):
-        nonlocal disconnect_event
-        if disconnect_event is not None:
-            disconnect_event.set()
     
     while streaming_active and retry_count < max_retries:
         try:
-            disconnect_event = asyncio.Event()
-            client = BleakClient(
-                mac_address,
-                timeout=20.0,
-                disconnected_callback=on_disconnect,
-            )
-            await client.connect()
-            
-            try:
+            async with BleakClient(mac_address, timeout=20.0) as client:
+                if not client.is_connected:
+                    await client.connect()
+                
                 streaming_message = f"Connected to {mac_address}"
                 streaming_active = True
                 retry_count = 0
@@ -366,31 +355,10 @@ async def stream_trainer_data(mac_address: str):
                 trainer.set_cycling_power_measurement_handler(power_handler)
                 await trainer.enable_cycling_power_measurement_notifications()
                 
-                # Stay connected — no data timeout. Await disconnect signal.
-                disconnect_event.clear()
+                # Stay connected as long as streaming is active — no data timeout.
+                # The async with context manager disconnects on exit.
                 while streaming_active:
-                    try:
-                        await asyncio.wait_for(
-                            asyncio.shield(disconnect_event.wait()),
-                            timeout=1.0,
-                        )
-                        streaming_message = "BLE connection lost — reconnecting..."
-                        break
-                    except asyncio.TimeoutError:
-                        pass
-            
-            except asyncio.CancelledError:
-                raise
-            except Exception as e:
-                err = str(e) or type(e).__name__
-                streaming_message = f"Stream error: {err} (retry {retry_count + 1}/{max_retries})"
-                break
-            finally:
-                disconnect_event.set()
-                try:
-                    await client.disconnect()
-                except Exception:
-                    pass
+                    await asyncio.sleep(0.5)
         
         except asyncio.CancelledError:
             break
