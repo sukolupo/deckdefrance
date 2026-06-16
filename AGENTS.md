@@ -89,7 +89,7 @@ deckdefrance/
 
 ```
 Tacx Trainer (BLE)
-  → BleakClient (async, auto-reconnects on drop, up to 5 retries)
+  → BleakClient (async, auto-reconnects on drop, up to 10 retries)
   → pycycling CyclingPowerService (notification handler)
   → power_handler(data) callback:
       1. extracts data.instantaneous_power → watts
@@ -104,9 +104,10 @@ Tacx Trainer (BLE)
 
 ### Reconnection Behavior
 
-- If BLE drops or no notification arrives for 15s, the background task attempts reconnection (up to 5 retries, 2s delay between attempts)
+- If BLE drops, the background task attempts reconnection (up to 10 retries, 3s delay between attempts)
 - The UI shows "Connecting..." during reconnection attempts via status polling
 - Streaming remains active across reconnections — the frontend polling continues
+- There is **no idle data timeout** — the connection stays alive even when not pedaling
 
 ## Global State (in main.py)
 
@@ -201,6 +202,44 @@ docker compose up --build
 
 The app runs on the Steam Deck. The configured Tacx MAC is `F0:C5:70:96:A9:3B`.
 
+### Connection Approach
+
+- Uses `async with BleakClient(mac_address, timeout=20.0) as client:` — requires the device to be cached in BlueZ with resolved services
+- Before streaming, run the BLE Connection Setup (bluetoothctl connect + trust) to cache services
+- **Do NOT use `bluetoothctl remove`** — it destroys the service cache and breaks streaming
+- The `async with` context manager auto-disconnects on exit (normal or error)
+- If the BLE link drops during streaming, the `async with` block exits and the outer retry loop reconnects (up to 10 retries, 3s delay)
+
+### Critical: BLE Connection Lessons (June 2026)
+
+The streaming code **must** use `async with BleakClient(mac_address, timeout=20.0) as client:` — this is the only pattern that works reliably. Here's what was tried and why other approaches fail:
+
+**Do NOT use manual connect/disconnect:**
+```python
+# BAD — bypasses bleak's service discovery, connection never stabilizes
+client = BleakClient(mac_address, timeout=45.0)
+await client.connect()
+```
+- `client.connect()` without `async with` bypasses bleak's internal service discovery path
+- Even though `connect()` returns `True`, subsequent GATT operations fail with "failed to discover services, device disconnected"
+- With `async with`, bleak properly discovers services on entry and disconnects on exit
+
+**Do NOT use longer timeouts:**
+- 45s timeout was tried because `client.connect()` took 30-35s to return
+- With `async with` and cached services, 20s timeout works fine (connects in 5-15s)
+- The long timeout in manual mode masked a fundamentally broken connection path
+
+**Do NOT poll `client.is_connected` to detect disconnects:**
+- `is_connected` can return stale `True` after the BLE link is already down
+- The `async with` pattern handles this naturally: when the link drops, the context exits with an exception
+- The outer exception handler catches it and triggers reconnection
+
+**Do NOT add idle data timeouts:**
+- The Tacx sends notifications even at 0W when idle
+- If the user stops pedaling, data may pause — a timeout would needlessly disconnect
+- The existing pattern (just `await asyncio.sleep(0.5)` in the streaming loop) is correct
+- Connection stays alive as long as the BLE link is up, regardless of data
+
 ## Controller Merge (Bluetooth + Tacx)
 
 Merge a paired Bluetooth controller with the Tacx trainer into one combined virtual gamepad. Both inputs go to the same device — the game sees a single "Tacx Virtual Gamepad".
@@ -259,21 +298,32 @@ Bluetooth Controller (evdev)
 
 ## Known Issues / Notes
 
+### BLE Connection Setup (Fresh Start)
+
+If the Tacx was removed from BlueZ (e.g. `bluetoothctl remove`) or won't connect:
+
+1. **Wake the Tacx** — pedal or power-cycle the trainer so it advertises
+2. **Scan** via the app: `POST /api/discover-all` (or click Discover in UI)
+3. **Cache services via bluetoothctl**:
+   ```bash
+   timeout 20 bluetoothctl connect F0:C5:70:96:A9:3B
+   ```
+   Retry a few times if `le-connection-abort-by-local` — it usually succeeds within 3 attempts. Wait 2s between retries.
+4. **Trust it**: `bluetoothctl trust F0:C5:70:96:A9:3B`
+5. **Disconnect**: `bluetoothctl disconnect F0:C5:70:96:A9:3B`
+6. **Start streaming** from the UI — `async with BleakClient` uses the cached services
+
+**Do NOT run `bluetoothctl remove`** — it destroys the service cache and the `async with BleakClient` approach requires the device to be in BlueZ's cache with resolved services.
+
 ### BLE Troubleshooting
 
-If streaming fails with "failed to discover services, device disconnected", there may be a stale bluetoothd bond:
-
-```bash
-bluetoothctl remove F0:C5:70:96:A9:3B
-```
-
-Then retry streaming. The `remove` command clears BlueZ's cached bond so the next connection attempt does a fresh service enumeration.
+If streaming fails with "Device with address F0:C5:70:96:A9:3B was not found", the device isn't cached in BlueZ. Run the BLE Connection Setup steps above.
 
 - `start-streaming` returns immediately; poll `/api/stream-status` for the connection result (the UI does this automatically every 2s while connecting)
-- Streaming auto-reconnects on BLE drop (up to 5 retries, 2s delay, 15s data timeout)
+- Streaming auto-reconnects on BLE drop (up to 10 retries, 3s delay)
+- There is **no idle data timeout** — the connection stays alive when not pedaling
 - `crank_revolutions` may not exist on all trainer models — falls back to 0 with `getattr`
 - Frontend JS/CSS cache-busting uses `?v=N` in script/link tags and `sw.js` PRECACHE — bump all on changes
-- The trainer sends notifications even at 0W (idle), so data flow is always active
 - Config is read once at stream start (not on every notification) — restart streaming after config changes
 - Right trigger emits on ABS_RZ, left trigger on ABS_Z (SDL/game convention on Linux)
 - Always use a single uvicorn worker (`--workers` defaults to 1) — multiple workers create stale duplicate uinput devices
