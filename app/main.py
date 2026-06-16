@@ -332,11 +332,31 @@ async def stream_trainer_data(mac_address: str):
                 mappings = cfg.get("mappings", [])
                 max_watts = cfg.get("max_target_watts", 300)
 
+                prev_crank_revs = 0
+                prev_crank_time = 0
+                last_cadence = 0.0
+
                 def power_handler(data):
                     global last_power_data, streaming_log
+                    nonlocal prev_crank_revs, prev_crank_time, last_cadence
                     try:
                         watts = data.instantaneous_power
-                        cadence = getattr(data, 'crank_revolutions', 0)
+                        crank_revs = getattr(data, 'cumulative_crank_revs', None)
+                        crank_time = getattr(data, 'last_crank_event_time', None)
+                        cadence = 0
+                        if crank_revs is not None and crank_time is not None:
+                            if prev_crank_revs > 0 and crank_revs > prev_crank_revs:
+                                delta_revs = crank_revs - prev_crank_revs
+                                delta_time = crank_time - prev_crank_time
+                                if delta_time > 0:
+                                    cadence = (delta_revs * 60.0 * 1024.0) / delta_time
+                                prev_crank_revs = crank_revs
+                                prev_crank_time = crank_time
+                            elif prev_crank_revs == 0:
+                                prev_crank_revs = crank_revs
+                                prev_crank_time = crank_time
+                        last_cadence = cadence
+
                         now = time.time()
                         last_power_data = {
                             "watts": watts,
