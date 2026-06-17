@@ -68,6 +68,7 @@ class ConfigRequest(BaseModel):
     power_threshold_race: float | None = None
     power_threshold_button_a: float | None = None
     gear_multiplier: float | None = None
+    auto_merge_device: str | None = None
     mappings: list[dict] | None = None
 
 
@@ -80,11 +81,14 @@ async def get_presets():
 @app.get("/api/health")
 async def health():
     """Health check endpoint."""
-    config = get_config()
+    cfg = get_config()
+    merge = get_merge_status()
     return {
         "status": "ok",
         "streaming": streaming_active,
-        "trainer_configured": config.get("tacx_mac_address", "XX:XX:XX:XX:XX:XX") != "XX:XX:XX:XX:XX:XX",
+        "merge_active": merge.get("active", False),
+        "auto_merge_device": cfg.get("auto_merge_device", ""),
+        "trainer_configured": cfg.get("tacx_mac_address", "XX:XX:XX:XX:XX:XX") != "XX:XX:XX:XX:XX:XX",
     }
 
 
@@ -459,6 +463,28 @@ async def stream_status():
         "connecting": is_connecting,
         "message": streaming_message,
     }
+
+
+@app.on_event("startup")
+async def startup_auto_merge():
+    """Auto-start merge if configured."""
+    cfg = get_config()
+    device_path = cfg.get("auto_merge_device", "")
+    if device_path:
+        print(f"Auto-starting merge on {device_path}")
+        asyncio.create_task(auto_start_merge(device_path))
+
+
+async def auto_start_merge(device_path: str):
+    """Start merge in background with a small delay."""
+    await asyncio.sleep(2)
+    try:
+        await start_merge(device_path)
+        s = get_merge_status()
+        if s.get("active"):
+            print(f"Auto-merge started on {device_path}")
+    except Exception as e:
+        print(f"Auto-merge failed: {e}")
 
 
 @app.get("/api/stream-data")

@@ -5,6 +5,7 @@
   "power_threshold_race": 90.0,
   "power_threshold_button_a": 130.0,
   "gear_multiplier": 2.0,
+  "auto_merge_device": "/dev/input/event16",
   "mappings": [
     {
       "source": "power",

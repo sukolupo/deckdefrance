@@ -42,6 +42,7 @@ DEFAULT_CONFIG = {
     "power_threshold_race": 120,
     "power_threshold_button_a": 200,
     "gear_multiplier": 2.0,
+    "auto_merge_device": "",
     "mappings": [
         {"source": "power", "target": "right_trigger"},
         {"source": "power", "target": "btn_a", "threshold": 200},

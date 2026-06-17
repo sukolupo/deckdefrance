@@ -240,6 +240,15 @@ async function refreshStatusTab() {
         document.getElementById('status-mac').className = 'status-value ' + (health.trainer_configured ? 'status-ok' : 'status-muted');
 
         document.getElementById('status-message').textContent = stream.message || '—';
+
+        const mergeEl = document.getElementById('status-merge');
+        if (health.merge_active) {
+            mergeEl.textContent = '✓ Active';
+            mergeEl.className = 'status-value status-ok';
+        } else {
+            mergeEl.textContent = '✗ Off';
+            mergeEl.className = 'status-value status-err';
+        }
     } catch (error) {
         console.error('Error refreshing status tab:', error);
         document.getElementById('status-service').textContent = '✗ Unreachable';
@@ -1150,11 +1159,18 @@ async function detectMergeDevice(path, btn) {
 
 async function refreshMergeStatus() {
     try {
-        const res = await fetch('/api/merge/status');
-        const data = await res.json();
+        const [statusRes, configRes] = await Promise.all([
+            fetch('/api/merge/status'),
+            fetch('/api/config'),
+        ]);
+        const data = await statusRes.json();
+        const config = await configRes.json();
         const statusEl = document.getElementById('merge-status');
         const startBtn = document.getElementById('merge-start-btn');
         const stopBtn = document.getElementById('merge-stop-btn');
+        const autoBadge = document.getElementById('merge-auto-badge');
+
+        const autoPath = config.auto_merge_device || '';
 
         if (data.active) {
             statusEl.innerHTML = `<span class="status-badge connected">Active</span> &mdash; ${data.device_name || data.source}`;
@@ -1164,6 +1180,13 @@ async function refreshMergeStatus() {
             statusEl.innerHTML = '<span class="status-badge idle">Inactive</span>';
             startBtn.disabled = false;
             stopBtn.disabled = true;
+        }
+
+        if (autoPath) {
+            autoBadge.style.display = 'inline';
+            autoBadge.title = `Auto-merge: ${autoPath}`;
+        } else {
+            autoBadge.style.display = 'none';
         }
     } catch (e) {
         console.error('Error refreshing merge status:', e);
@@ -1201,6 +1224,29 @@ async function stopMerge() {
     } catch (e) {
         alert('Error: ' + e.message);
         stopBtn.disabled = false;
+    }
+}
+
+async function saveAutoMerge() {
+    if (!_mergeDevice) {
+        alert('Select a controller from the scan list first.');
+        return;
+    }
+    try {
+        const res = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ auto_merge_device: _mergeDevice }),
+        });
+        const data = await res.json();
+        if (data.auto_merge_device) {
+            alert(`Auto-merge saved: ${_mergeDevice}\nRestart server to apply.`);
+            refreshMergeStatus();
+        } else {
+            alert('Failed to save auto-merge config');
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
     }
 }
 

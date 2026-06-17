@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deckdefrance - Tacx Trainer Control</title>
-    <link rel="stylesheet" href="/static/style.css?v=33">
+    <link rel="stylesheet" href="/static/style.css?v=35">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,8 +16,7 @@
     <div class="container">
         <div class="header-bar">
             <button class="hamburger" id="hamburger-btn" aria-label="Open menu">&#9776;</button>
-            <img src="/static/deckdefrance_logo.png" alt="deckdefrance" style="height:40px;width:auto;">
-            <h1>deckdefrance</h1>
+            <img src="/static/deckdefrance_logo.png" alt="deckdefrance" style="height:80px;width:auto;">
         </div>
         <p class="subtitle">Tacx Turbo Trainer to Tour de France Controller Mapper</p>
 
@@ -25,8 +24,7 @@
 
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <img src="/static/deckdefrance_logo.png" alt="deckdefrance" style="height:28px;width:auto;">
-                <span class="sidebar-title">deckdefrance</span>
+                <img src="/static/deckdefrance_logo.png" alt="deckdefrance" style="height:80px;width:auto;">
                 <button class="sidebar-close" id="sidebar-close">&times;</button>
             </div>
             <div class="sidebar-items">
@@ -62,6 +60,10 @@
                 <div class="status-item">
                     <span class="status-label">Stream Message:</span>
                     <span id="status-message" class="status-value">—</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Merge:</span>
+                    <span id="status-merge" class="status-value">Checking...</span>
                 </div>
             </div>
             <button class="btn btn-refresh" onclick="refreshStatusTab()">Refresh Status</button>
@@ -472,10 +474,14 @@
                 <h3>Merge Status</h3>
                 <div class="test-result" id="merge-status">
                     <span class="status-badge idle">Inactive</span>
+                    <span id="merge-auto-badge" style="margin-left:10px;display:none;">
+                        <span class="status-badge connected">Auto</span>
+                    </span>
                 </div>
-                <div style="display:flex;gap:10px;margin-top:10px;">
+                <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
                     <button class="btn btn-success" id="merge-start-btn" onclick="startMerge()">Start Merge</button>
                     <button class="btn btn-danger" id="merge-stop-btn" onclick="stopMerge()" disabled>Stop Merge</button>
+                    <button class="btn btn-secondary" id="merge-save-btn" onclick="saveAutoMerge()">Save as Auto-Merge</button>
                 </div>
             </div>
 
@@ -491,6 +497,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=33"></script>
+    <script src="/static/app.js?v=35"></script>
 </body>
 </html>
