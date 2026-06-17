@@ -380,8 +380,10 @@ async def stream_trainer_data(mac_address: str):
                 await trainer.enable_cycling_power_measurement_notifications()
                 
                 # Stay connected as long as streaming is active — no data timeout.
-                # The async with context manager disconnects on exit.
+                # Poll is_connected to detect silent BLE drops.
                 while streaming_active:
+                    if not client.is_connected:
+                        raise ConnectionError("BLE link lost")
                     await asyncio.sleep(0.5)
         
         except asyncio.CancelledError:
