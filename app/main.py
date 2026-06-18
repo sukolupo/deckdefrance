@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
 import asyncio
+import contextlib
 import time
 from collections import deque
 
@@ -322,10 +323,8 @@ async def stream_trainer_data(mac_address: str):
     
     while streaming_active and retry_count < max_retries:
         try:
-            async with BleakClient(mac_address, timeout=20.0) as client:
-                if not client.is_connected:
-                    await client.connect()
-                
+            async with BleakClient(mac_address, timeout=45.0) as client:
+                print(f"BLE connected to {mac_address}")
                 streaming_message = f"Connected to {mac_address}"
                 streaming_active = True
                 retry_count = 0
@@ -383,6 +382,7 @@ async def stream_trainer_data(mac_address: str):
                 # Poll is_connected to detect silent BLE drops.
                 while streaming_active:
                     if not client.is_connected:
+                        print("BLE link lost — raising ConnectionError")
                         raise ConnectionError("BLE link lost")
                     await asyncio.sleep(0.5)
         
@@ -390,9 +390,14 @@ async def stream_trainer_data(mac_address: str):
             break
         except Exception as e:
             retry_count += 1
+            import traceback
+            print(f"Stream error (retry {retry_count}/{max_retries}):", traceback.format_exc())
             streaming_message = f"Stream error: {str(e)} (retry {retry_count}/{max_retries})"
             if retry_count < max_retries:
-                await asyncio.sleep(3)
+                for _ in range(6):
+                    await asyncio.sleep(0.5)
+                    if not streaming_active:
+                        break
             else:
                 streaming_message = "Stream stopped — max retries reached"
     
@@ -439,11 +444,8 @@ async def stop_streaming():
     try:
         streaming_active = False
         if streaming_task and not streaming_task.done():
-            streaming_task.cancel()
-            try:
-                await streaming_task
-            except asyncio.CancelledError:
-                pass
+            with contextlib.suppress(asyncio.TimeoutError):
+                await asyncio.wait_for(streaming_task, timeout=5.0)
         
         return {
             "status": "stopped",
