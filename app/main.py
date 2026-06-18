@@ -404,6 +404,46 @@ async def stream_trainer_data(mac_address: str):
     streaming_active = False
 
 
+async def _services_cached(mac_address: str) -> bool:
+    """Check if BLE services are cached in BlueZ for this device."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "bluetoothctl", "info", mac_address,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=10.0)
+        return b"UUID:" in stdout
+    except Exception:
+        return False
+
+async def _cache_services(mac_address: str) -> bool:
+    """Cache BLE services via bluetoothctl connect + disconnect."""
+    for attempt in range(3):
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "bluetoothctl", "--", "connect", mac_address,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+            await asyncio.wait_for(proc.wait(), timeout=30.0)
+            await asyncio.sleep(2)
+            proc = await asyncio.create_subprocess_exec(
+                "bluetoothctl", "disconnect", mac_address,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+            await asyncio.wait_for(proc.wait(), timeout=10.0)
+            if await _services_cached(mac_address):
+                print(f"Services cached for {mac_address}")
+                return True
+        except asyncio.TimeoutError:
+            print(f"Service cache attempt {attempt + 1} timed out")
+        await asyncio.sleep(3)
+    print(f"Failed to cache services for {mac_address}")
+    return False
+
+
 @app.post("/api/start-streaming")
 async def start_streaming():
     """Start streaming trainer data to the virtual controller (returns immediately, poll status)."""
@@ -423,6 +463,16 @@ async def start_streaming():
             "status": "error",
             "message": "Tacx MAC address not configured",
         }
+    
+    # Ensure BLE services are cached in BlueZ for reliable BleakClient connection
+    if not await _services_cached(mac_address):
+        print(f"Services not cached for {mac_address}, caching now...")
+        cached = await _cache_services(mac_address)
+        if not cached:
+            return {
+                "status": "error",
+                "message": "Could not cache BLE services — ensure Tacx is powered on and advertising",
+            }
     
     streaming_active = True
     streaming_message = "Connecting..."

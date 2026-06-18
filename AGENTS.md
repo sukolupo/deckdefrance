@@ -205,7 +205,8 @@ The app runs on the Steam Deck. The configured Tacx MAC is `F0:C5:70:96:A9:3B`.
 ### Connection Approach
 
 - Uses `async with BleakClient(mac_address, timeout=20.0) as client:` — requires the device to be cached in BlueZ with resolved services
-- Before streaming, run the BLE Connection Setup (bluetoothctl connect + trust) to cache services
+- **Auto-cache**: On `POST /api/start-streaming`, the app checks `bluetoothctl info <mac>` for UUIDs. If none found, it runs `bluetoothctl -- connect <mac>` (up to 3 retries with timeout) then `bluetoothctl disconnect <mac>` to populate the service cache. Only then does it start the `BleakClient` streaming task.
+- The `bluetoothctl -- connect <mac>` syntax (double-dash) is critical — it runs connect as a non-interactive command and reliably discovers services. Piped `bluetoothctl connect ... | grep` does not.
 - **Do NOT use `bluetoothctl remove`** — it destroys the service cache and breaks streaming
 - The `async with` context manager auto-disconnects on exit (normal or error)
 - If the BLE link drops during streaming, the `async with` block exits and the outer retry loop reconnects (up to 10 retries, 3s delay)
@@ -300,18 +301,21 @@ Bluetooth Controller (evdev)
 
 ### BLE Connection Setup (Fresh Start)
 
-If the Tacx was removed from BlueZ (e.g. `bluetoothctl remove`) or won't connect:
+The app **auto-caches** services on `POST /api/start-streaming` — if `bluetoothctl info` shows no UUIDs, the app runs `bluetoothctl -- connect` + `disconnect` up to 3 times. Usually no manual steps needed.
+
+If the auto-cache fails or you need to do it manually:
 
 1. **Wake the Tacx** — pedal or power-cycle the trainer so it advertises
 2. **Scan** via the app: `POST /api/discover-all` (or click Discover in UI)
 3. **Cache services via bluetoothctl**:
    ```bash
-   timeout 20 bluetoothctl connect F0:C5:70:96:A9:3B
+   timeout 30 bluetoothctl -- connect F0:C5:70:96:A9:3B
    ```
-   Retry a few times if `le-connection-abort-by-local` — it usually succeeds within 3 attempts. Wait 2s between retries.
+   Use `bluetoothctl -- connect <mac>` (double-dash) not `bluetoothctl connect <mac>`. The `--` runs it as a non-interactive command with proper service discovery. Retry a few times if `le-connection-abort-by-local` — it usually succeeds within 3 attempts.
 4. **Trust it**: `bluetoothctl trust F0:C5:70:96:A9:3B`
 5. **Disconnect**: `bluetoothctl disconnect F0:C5:70:96:A9:3B`
-6. **Start streaming** from the UI — `async with BleakClient` uses the cached services
+6. **Verify**: `bluetoothctl info F0:C5:70:96:A9:3B` should show `UUID: Cycling Power (00001818-...)`
+7. **Start streaming** from the UI — `async with BleakClient` uses the cached services
 
 **Do NOT run `bluetoothctl remove`** — it destroys the service cache and the `async with BleakClient` approach requires the device to be in BlueZ's cache with resolved services.
 
