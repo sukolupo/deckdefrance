@@ -294,7 +294,7 @@ Bluetooth Controller (evdev)
 - The Steam virtual Xbox pads (`0x28de:0x11ff`) are created by Steam Input and may wrap your Bluetooth controller. Try each one if you don't see your controller's real name.
 - Axis values are dynamically scaled from the source device's absinfo ranges to match our device's declared ranges.
 - Merge and trainer streaming operate independently — use both at the same time or separately.
-- Merge does not forward trigger axes (ABS_Z/ABS_RZ) — those are reserved for the Tacx power mapper.
+- Merge does not forward ABS_RZ (right trigger) — reserved for Tacx power mapping. ABS_Z (left trigger) is now forwarded from the controller.
 - If you change the source BT controller, stop merge, scan again, and start on the new device path.
 
 ## Known Issues / Notes
@@ -332,4 +332,5 @@ If streaming fails with "Device with address F0:C5:70:96:A9:3B was not found", t
 - Right trigger emits on ABS_RZ, left trigger on ABS_Z (SDL/game convention on Linux)
 - Always use a single uvicorn worker (`--workers` defaults to 1) — multiple workers create stale duplicate uinput devices
 - Chart.js loaded from CDN (not bundled) — requires internet
-- Passthrough.py (Steam Deck controller passthrough) is deprecated. The Deck's internal controller is grabbed by Steam Input at the kernel level and never exposes live analog axes through evdev. Use Controller Merge instead for external BT controllers.
+- Passthrough.py (Steam Deck controller passthrough) is deprecated.
+- Built-in Steam Deck controller IS mergeable: when the game is loaded with **Tacx Virtual Gamepad** as Controller 1, Steam Input creates a "Microsoft X-Box 360 pad N" virtual device driven by the Deck's physical controls. Scan in the Merge tab, find the pad that shows events immediately on Detect (without touching anything), and merge it. The first pad (index 0) is usually the Tacx Virtual Gamepad itself — skip it and merge the next one.
