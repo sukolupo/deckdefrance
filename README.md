@@ -8,6 +8,12 @@
 
 The game sees **one** controller — *Tacx Virtual Gamepad* — with all inputs: Tacx power→trigger mappings + Bluetooth controller joystick/buttons.
 
+<p align="center">
+  <a href="https://youtu.be/fl-AArkezSE">
+    <img src="https://img.youtube.com/vi/fl-AArkezSE/maxresdefault.jpg" width="600" alt="deckdefrance demo video">
+  </a>
+</p>
+
 ---
 
 ## Features
