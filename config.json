@@ -1,12 +1,20 @@
 {
   "tacx_mac_address": "F0:C5:70:96:A9:3B",
-  "max_target_watts": 250.0,
-  "cadence_threshold": 90.0,
-  "power_threshold_race": 120.0,
-  "power_threshold_button_a": 200.0,
+  "max_target_watts": 150.0,
+  "cadence_threshold": 80.0,
+  "power_threshold_race": 90.0,
+  "power_threshold_button_a": 130.0,
   "gear_multiplier": 2.0,
+  "auto_merge_device": "",
   "mappings": [
-    { "source": "power", "target": "right_trigger" },
-    { "source": "power", "target": "btn_a", "threshold": 200 }
+    {
+      "source": "power",
+      "target": "right_trigger"
+    },
+    {
+      "source": "power",
+      "target": "btn_a",
+      "threshold": 200
+    }
   ]
 }

@@ -1,391 +1,276 @@
+<p align="center">
+  <img src="app/static/deckdefrance_logo.png" alt="deckdefrance" width="320">
+</p>
+
 # deckdefrance
 
-Steam Deck Python app to support mapping from TacX Turbo Trainer metrics to Tour de France game controller actions.
+**Tacx turbo trainer → Tour de France controller mapper.** Connects to a Tacx smart trainer over BLE, maps power/cadence/resistance to a virtual gamepad (uinput), merges a paired Bluetooth controller into the same device, and serves a web dashboard with a full-screen touch gamepad page.
+
+The game sees **one** controller — *Tacx Virtual Gamepad* — with all inputs: Tacx power→trigger mappings + Bluetooth controller joystick/buttons.
+
+<p align="center">
+  <a href="https://youtu.be/fl-AArkezSE">
+    <img src="https://img.youtube.com/vi/fl-AArkezSE/maxresdefault.jpg" width="600" alt="deckdefrance demo video">
+  </a>
+</p>
+
+---
 
 ## Features
 
-- **Web UI** - Configuration panel and trainer connection testing
-- **REST API** - Map trainer metrics to controller output
-- **Docker Support** - Containerized deployment
-- **Configuration Management** - Persistent parameter storage
+- **BLE Streaming** — Connects to Tacx trainers via Cycling Power Service with auto-reconnect (up to 10 retries)
+- **Virtual Gamepad** — Creates a uinput Xbox 360 controller (0x045e/0x028e) with 8 axes + 11 buttons
+- **Configurable Mappings** — Map power/cadence/resistance to triggers, buttons, or sticks
+- **Controller Merge** — Forward a Bluetooth gamepad's inputs to the same virtual device
+- **Web Dashboard** — Status monitoring, live chart, config, BLE discovery, steering, test controls
+- **Full-Screen Touch Gamepad** — PWA `/play` page with virtual joystick and buttons (installable on Android)
+- **Auto-Cache BLE Services** — Automatically caches BlueZ services before connecting
+- **FTP Presets** — Beginner / Average / Competitive / Pro power threshold profiles
+- **PWA Support** — Installable web app with service worker caching
+
+---
+
+## Quick Start
+
+```bash
+# 1. Install udev rules (required once for uinput access)
+./install-udev.sh
+
+# 2. Start the server
+./start.sh
+# Or manually: .venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# 3. Open in browser
+open http://localhost:8000
+```
+
+---
+
+## Installation
+
+See [INSTALL.md](INSTALL.md) for a complete step-by-step guide covering:
+
+- Python virtual environment setup
+- udev rules and permissions
+- BLE connection setup
+- Controller merge configuration
+- Auto-start with systemd
+
+---
+
+## Web UI
+
+| Tab | Description |
+|-----|-------------|
+| **Status** | Connection state, live power/cadence data, real-time chart |
+| **Control** | Manual virtual joystick, D-pad, and button test |
+| **Discover** | BLE scan for Tacx trainers |
+| **Steer** | Draggable virtual joystick widget with mouse/touch |
+| **Config** | MAC address, mappings, FTP presets, thresholds |
+| **Test** | Sample mapping preview + BLE connection test |
+| **Merge** | Scan, probe, and start Bluetooth controller merge |
+| **Play** | `/play` full-screen touch gamepad (PWA start page) |
+
+---
+
+## Configurable Mappings
+
+Mappings define how trainer metrics map to controller outputs. Configured in `config.json` or the Config tab:
+
+```json
+{
+  "tacx_mac_address": "F0:C5:70:96:A9:3B",
+  "max_target_watts": 250,
+  "cadence_threshold": 90,
+  "power_threshold_race": 120,
+  "power_threshold_button_a": 200,
+  "gear_multiplier": 2.0,
+  "mappings": [
+    { "source": "power", "target": "right_trigger" },
+    { "source": "power", "target": "btn_a", "threshold": 200 }
+  ]
+}
+```
+
+### Sources & Targets
+
+| Source | Description |
+|--------|-------------|
+| `power` | Instantaneous power in watts |
+| `cadence` | Pedal cadence in RPM |
+| `resistance` | Trainer resistance (future) |
+
+| Target | Description | Range |
+|--------|-------------|-------|
+| `right_trigger` | Right trigger (Tacx power) | 0–255 |
+| `left_trigger` | Left trigger | 0–255 |
+| `left_stick_x/y` | Left analog stick | 0–65535 |
+| `right_stick_x/y` | Right analog stick | 0–65535 |
+| `btn_a/b/x/y` | Face buttons | Press/release |
+
+**Scaling rules:**
+- **Axes**: source value 0→max scales linearly to target range. Y-stick axes center at 50% (32768).
+- **Buttons**: press when source exceeds `threshold`, release when below.
+
+---
 
 ## Project Structure
 
 ```
-app/
-├── __init__.py          # Package init
-├── main.py              # FastAPI application
-├── mapper.py            # Trainer to controller mapping logic
-├── config.py            # Configuration management
-└── static/
-    ├── index.html       # Web UI interface
-    ├── style.css        # Styling
-    └── app.js           # Frontend logic
-docker-compose.yml       # Docker compose configuration
-requirements.txt         # Python dependencies
-Dockerfile              # Docker image definition
+deckdefrance/
+├── AGENTS.md                 # Full project knowledge base
+├── README.md                 # This file
+├── INSTALL.md                # Detailed installation guide
+├── config.json               # Persistent configuration
+├── requirements.txt          # Python dependencies
+├── Dockerfile                # Docker image
+├── docker-compose.yml        # Docker Compose
+├── start.sh                  # Production start script
+├── install-udev.sh           # Install udev rules for uinput
+├── install-service.sh        # Install systemd user service
+├── 99-tacx-gamepad.rules     # udev rules for Tacx Virtual Gamepad
+└── app/
+    ├── __init__.py
+    ├── main.py               # FastAPI app — routes, streaming, auto-cache
+    ├── mapper.py             # Tacx → controller mapping + shared uinput device
+    ├── config.py             # JSON config read/write + FTP presets
+    ├── discovery.py          # BLE device discovery
+    ├── passthrough.py        # (DEPRECATED) Steam Deck passthrough
+    ├── merge.py              # Bluetooth controller merge into shared uinput
+    └── static/
+        ├── index.html        # Web UI (all tabs)
+        ├── play.html         # Full-screen touch gamepad (PWA)
+        ├── app.js            # Frontend logic
+        ├── style.css         # Yellow/black Tour de France theme
+        ├── manifest.json     # PWA manifest
+        ├── icon.svg          # PWA app icon
+        ├── sw.js             # Service worker
+        ├── deckdefrance_logo.png
+        ├── deckdefrance_white.png
+        ├── deckdefrance_black.png
+        └── deckdefrance_white_square.png
 ```
 
-## Prerequisites
-
-### For Docker Option
-
-**Steam Deck (Arch Linux):**
-
-1. **Disable read-only filesystem:**
-   ```bash
-   sudo steamos-readonly disable
-   ```
-
-2. **Install Docker:**
-   ```bash
-   sudo pacman -S docker
-   ```
-
-3. **Start and enable the Docker daemon:**
-   ```bash
-   sudo systemctl start docker
-   sudo systemctl enable docker
-   ```
-
-4. **Add your user to the docker group (to run without sudo):**
-   ```bash
-   sudo usermod -aG docker $USER
-   newgrp docker
-   ```
-
-5. **Install Docker Compose (optional, but recommended):**
-   ```bash
-   sudo pacman -S docker-compose
-   ```
-
-6. **Re-enable read-only filesystem:**
-   ```bash
-   sudo steamos-readonly enable
-   ```
-
-7. **Verify installation:**
-   ```bash
-   docker --version
-   docker run hello-world
-   ```
-
-### For Local Installation
-
-- Python 3.9 or higher
-- pip package manager
-
-## Quick Start
-
-### Option 1: Docker (Recommended for Production)
-
-Build and run with Docker Compose:
-
-```bash
-docker-compose up --build
-```
-
-Access the web UI at `http://localhost:8000/`
-
-### Option 2: Local Installation (For Development)
-
-#### Prerequisites
-- Python 3.9+
-- pip
-
-#### Installation Steps
-
-1. **Clone and navigate to the project:**
-   ```bash
-   cd /home/deck/git/deckdefrance
-   ```
-
-2. **Create a virtual environment (recommended):**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-4. **Run the FastAPI server:**
-   ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-
-   The `--reload` flag watches for file changes and auto-restarts the server (useful for development).
-
-5. **Access the application:**
-   - Open your browser to `http://localhost:8000/`
-   - Or from another device: `http://<steam-deck-ip>:8000/`
-
-#### Running Without Auto-Reload (Production)
-
-For a stable deployment without auto-reload:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
-```
-
-#### Steam Deck Specific Notes
-
-On Steam Deck, you may need to activate the virtual environment in each terminal session:
-
-```bash
-source /home/deck/git/deckdefrance/.venv/bin/activate
-```
-
-To run the app in the background:
-
-```bash
-nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > deckdefrance.log 2>&1 &
-```
-
-View the log file:
-
-```bash
-tail -f deckdefrance.log
-```
-
-Stop the background process:
-
-```bash
-pkill -f "uvicorn app.main:app"
-```
-
-#### Running the Trainer Connection Script
-
-To run the BLE trainer connection module directly (requires pynput and bleak):
-
-```bash
-pip install bleak pycycling pynput
-python -m app.mapper
-```
-
-This will start the trainer connection handler that maps Tacx power directly to uinput events.
-
-
-## Web UI Features
-
-### Status Tab
-- Service health check
-- Trainer connection status
-- Configuration status
-
-### Discover Tab
-Automatically find your Tacx trainer via Bluetooth scanning:
-
-- **Scan for Tacx Trainers** - Scans specifically for Tacx devices (5-second scan)
-- **Discovered Devices List** - Shows all discovered Tacx trainers with:
-  - Device name
-  - MAC address (Bluetooth hardware ID)
-  - Signal strength (RSSI in dBm)
-  - One-click select button to configure the trainer
-- **Scan All Devices** - Shows all nearby Bluetooth devices (for debugging)
-
-**How to use:**
-1. Power on your Tacx trainer and ensure it's in pairing mode
-2. Click "Scan for Tacx Trainers"
-3. Wait for the scan to complete (up to 5 seconds)
-4. Click "Select" on your trainer in the list
-5. The MAC address is automatically populated in the Configuration tab
-
-### Configuration Tab
-Configure the following parameters:
-
-- **Tacx MAC Address** - Bluetooth address of your trainer (auto-filled via Discover tab)
-- **Max Target Watts** - Power ceiling for mapping (default: 300W)
-- **Cadence Threshold** - RPM trigger for button actions (default: 95 RPM)
-- **Power Threshold (Race Mode)** - Watts to activate race mode (default: 150W)
-- **Power Threshold (Button A)** - Watts to trigger button A (default: 250W)
-- **Gear Multiplier** - Resistance to gear conversion multiplier (default: 2.0)
-
-### Test Connection Tab
-- **Sample Mapping** - Test trainer metrics mapping with custom values
-- **Trainer Connection Test** - Verify Tacx trainer connectivity
+---
 
 ## API Endpoints
 
-### `GET /`
-Serves the web UI interface.
+### Health & Config
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Server status with streaming/merge state |
+| GET | `/api/config` | Get current config |
+| POST | `/api/config` | Save config (partial update) |
+| GET | `/api/config/presets` | List FTP presets |
 
-### `GET /api/config`
-Retrieve current configuration.
+### Streaming
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/start-streaming` | Start BLE streaming |
+| POST | `/api/stop-streaming` | Stop streaming |
+| GET | `/api/stream-status` | `{ streaming, connecting, message }` |
+| GET | `/api/stream-data` | Latest `{ watts, cadence, timestamp }` |
+| GET | `/api/stream-log` | Last 100 data points for chart |
 
-Response:
-```json
-{
-  "tacx_mac_address": "XX:XX:XX:XX:XX:XX",
-  "max_target_watts": 300,
-  "cadence_threshold": 95,
-  "power_threshold_race": 150,
-  "power_threshold_button_a": 250,
-  "gear_multiplier": 2.0
-}
+### Controller
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/map` | Test mapping with sample values |
+| POST | `/api/joystick` | Set left stick position (-1..1) |
+| POST | `/api/dpad` | Set D-pad axes (-1/0/1) |
+| POST | `/api/button` | Press/release a virtual button |
+
+### Discovery
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/test-trainer` | Test BLE connection to configured MAC |
+| POST | `/api/discover-tacx` | Scan for Tacx trainers (5s) |
+| POST | `/api/discover-all` | Scan for all BLE devices |
+
+### Merge
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/merge/devices` | List gamepad evdev devices |
+| GET | `/api/merge/status` | Merge active state |
+| POST | `/api/merge/probe` | Watch device for 3s, return events |
+| POST | `/api/merge/start` | Start merge on source device path |
+| POST | `/api/merge/stop` | Stop merge |
+
+### Frontend
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Web dashboard |
+| GET | `/play` | Full-screen touch gamepad |
+
+---
+
+## BLE Streaming Flow
+
+```
+Tacx Trainer (BLE)
+  → BleakClient (async with, auto-reconnects up to 10×)
+  → pycycling CyclingPowerService notifications
+  → power_handler: extracts watts, calculates cadence from crank revs
+  → apply_mappings(): scales values per config, emits to uinput
+  → Frontend polls /api/stream-data (200ms) + /api/stream-log (1s)
+  → Chart.js renders rolling 120-point buffer (Watts, Cadence, Trigger)
 ```
 
-### `POST /api/config`
-Update configuration parameters. Send JSON with fields to update.
+### Reconnection Behavior
+- On BLE drop: up to 10 retries with 3s delay (split into 0.5s polls)
+- UI shows "Connecting..." during reconnection
+- No idle data timeout — connection stays alive when not pedaling
+- `async with BleakClient` pattern handles connect/disconnect lifecycle
 
-### `POST /api/map`
-Map trainer metrics to controller output.
+---
 
-Request:
-```json
-{
-  "trainer_power": 220,
-  "cadence": 95,
-  "resistance": 3.5
-}
+## Controller Merge
+
+Merge a paired Bluetooth controller with the Tacx trainer into one combined virtual gamepad:
+
+```
+Bluetooth Controller (evdev)
+  → merge.py reads axis/button events
+  → scales axis values from source range to target 0–65535
+  → skips ABS_RZ (right trigger reserved for Tacx power)
+  → writes to shared uinput device
+  → Game sees Tacx Virtual Gamepad with ALL inputs
 ```
 
-Response:
-```json
-{
-  "input": {
-    "trainer_power": 220,
-    "cadence": 95,
-    "resistance": 3.5
-  },
-  "mapping": {
-    "cycling_power": 220,
-    "button_a": false,
-    "button_b": true,
-    "gear": 7,
-    "mode": "race"
-  }
-}
+### Forwarded Inputs
+| Source | Forwarded | Notes |
+|--------|-----------|-------|
+| Left stick (ABS_X/Y) | ✅ Scaled | Source min/max → 0..65535 |
+| Right stick (ABS_RX/RY) | ✅ Scaled | Source min/max → 0..65535 |
+| D-pad (ABS_HAT0X/Y) | ✅ Scaled | -1/1 forwarded as-is |
+| Face buttons (A/B/X/Y) | ✅ Raw | EV_KEY forwarded as-is |
+| Bumpers/thumb clicks | ✅ Raw | EV_KEY forwarded as-is |
+| Left trigger (ABS_Z) | ✅ Scaled | Now forwarded |
+| Right trigger (ABS_RZ) | ❌ Skipped | Reserved for Tacx power |
+
+---
+
+## Known Issues
+
+- **Merge events only in game mode** — Steam Input virtual Xbox pads only produce events when a game consuming them is running. Probe/scan with the game open.
+- **Steam Deck's built-in controller** — It works via merge! Once the game loads and **Tacx Virtual Gamepad** is set as Controller 1, the built-in Deck controls appear as a "Microsoft X-Box 360 pad N" device. When you click **Detect**, events show up immediately (Steam Input is already driving it) — that's the one to merge. Set Tacx Virtual Gamepad as first controller, merge the other pad as second.
+- **BLE + Classic Bluetooth interference** — The Deck's single radio struggles with mixed connections. Use a USB BT dongle for the Tacx, or a USB cable for the controller.
+- **`le-connection-abort-by-local`** — Transient BlueZ issue. Auto-cache retries up to 3×. If it persists, power-cycle the Tacx.
+- **Do NOT run `bluetoothctl remove`** — Destroys the BlueZ service cache. `async with BleakClient` requires cached services.
+
+---
+
+## Development
+
+```bash
+# With auto-reload (development)
+.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Single worker only — multiple workers create duplicate uinput devices
 ```
 
-### `POST /api/test-trainer`
-Test connection to Tacx trainer.
+---
 
-## Configuration File
-### `POST /api/discover-tacx`
-Scan for Tacx trainers via Bluetooth.
+## License
 
-Response:
-```json
-{
-   "found": 1,
-   "devices": [
-      {
-         "mac_address": "AA:BB:CC:DD:EE:FF",
-         "name": "Tacx Turbo Trainer",
-         "rssi": -45
-      }
-   ]
-}
-```
-
-`rssi` is the signal strength in dBm (higher values closer to -30 indicate stronger signals).
-
-### `POST /api/discover-all`
-Scan for all nearby Bluetooth devices (not just Tacx).
-
-Response:
-```json
-{
-   "found": 5,
-   "devices": [
-      {
-         "mac_address": "AA:BB:CC:DD:EE:FF",
-         "name": "Tacx Turbo Trainer",
-         "rssi": -45
-      },
-      {
-         "mac_address": "11:22:33:44:55:66",
-         "name": "Steam Deck",
-         "rssi": -50
-      }
-   ]
-}
-```
-
-
-Configuration is stored in `config.json` in the project root. You can edit this file directly or use the web UI.
-
-Example:
-```json
-{
-  "tacx_mac_address": "AA:BB:CC:DD:EE:FF",
-  "max_target_watts": 300,
-  "cadence_threshold": 95,
-  "power_threshold_race": 150,
-  "power_threshold_button_a": 250,
-  "gear_multiplier": 2.0
-}
-```
-
-## Mapping Logic
-
-The mapper converts trainer metrics as follows:
-
-- **Cycling Power** = Trainer Power (watts)
-- **Button A** = Active when Power > Power Threshold
-- **Button B** = Active when Cadence > Cadence Threshold
-- **Gear** = min(10, max(1, int(Resistance * Gear Multiplier)))
-- **Mode** = "race" if Power > Race Threshold, else "cruise"
-
-## Next Steps
-
-1. Configure your Tacx trainer MAC address in the Configuration tab
-2. Test the mapping with sample values
-3. Run the trainer connection test
-4. Integrate with your Steam Deck's game controller
-
-## Accessing the App from Other Devices
-
-Once running locally on Steam Deck, you can access the web UI from any device on the same network:
-
-1. Find your Steam Deck's IP address:
-   ```bash
-   hostname -I
-   ```
-
-2. From another device, open your browser to:
-   ```
-   http://<steam-deck-ip>:8000/
-   ```
-
-   Example: `http://192.168.1.100:8000/`
-
-## Troubleshooting
-
-### "ModuleNotFoundError" or "No module named 'fastapi'"
-- Ensure virtual environment is activated: `source .venv/bin/activate`
-- Reinstall dependencies: `pip install -r requirements.txt`
-
-### Port 8000 already in use
-- Check what's running on port 8000: `lsof -i :8000`
-- Kill the process: `pkill -f "uvicorn"`
-- Or use a different port: `uvicorn app.main:app --port 8001`
-
-### Cannot connect to Tacx trainer
-- Verify MAC address is correct in Configuration tab
-- Check if trainer is powered on and in pairing mode
-- Ensure Bluetooth is enabled on Steam Deck
-- View logs for connection errors: `tail -f deckdefrance.log`
-
-### Web UI not loading
-- Check if server is running: `curl http://localhost:8000/`
-- Verify static files exist: `ls -la app/static/`
-- Check browser console for JavaScript errors (F12)
-
-### Permission denied errors
-- Ensure you have proper directory permissions:
-  ```bash
-  chmod -R u+rwx /home/deck/git/deckdefrance
-  ```
-
-## Performance Considerations
-
-- For development: Use `--reload` flag to auto-restart on changes
-- For production: Run with `--workers 2` or more based on CPU
-- On Steam Deck: Monitor performance with `htop` to avoid thermal throttling
-- BLE connections: Keep USB 2.0 devices away from Bluetooth to reduce interference
-
+MIT

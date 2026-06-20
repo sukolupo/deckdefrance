@@ -160,7 +160,7 @@ def power_data_handler(data):
 
     max_target_watts = 300
     trigger_value = int((min(watts, max_target_watts) / max_target_watts) * 255)
-    emit(ecodes.ABS_Z, trigger_value)
+    emit(ecodes.ABS_RZ, trigger_value)
 
 
 async def run():

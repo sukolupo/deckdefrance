@@ -4,30 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deckdefrance - Tacx Trainer Control</title>
-    <link rel="stylesheet" href="/static/style.css?v=29">
+    <link rel="stylesheet" href="/static/style.css?v=35">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#ffd700">
+    <link rel="icon" href="/static/deckdefrance_logo.png" sizes="any" type="image/png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>deckdefrance</h1>
+        <div class="header-bar">
+            <button class="hamburger" id="hamburger-btn" aria-label="Open menu">&#9776;</button>
+            <img src="/static/deckdefrance_logo.png" alt="deckdefrance" style="height:80px;width:auto;">
+        </div>
         <p class="subtitle">Tacx Turbo Trainer to Tour de France Controller Mapper</p>
 
-        <nav class="nav-tabs">
-            <button class="nav-btn active" data-tab="status">Status</button>
-            <button class="nav-btn" data-tab="control">Control</button>
-            <button class="nav-btn" data-tab="discover">Discover</button>
-            <button class="nav-btn" data-tab="play">Play</button>
-            <button class="nav-btn" data-tab="commands">Commands</button>
-            <button class="nav-btn" data-tab="steer">Steer</button>
-            <button class="nav-btn" data-tab="config">Configuration</button>
-            <button class="nav-btn" data-tab="test">Test Connection</button>
-            <button class="nav-btn" data-tab="merge">Merge</button>
-            <a href="/play" class="nav-btn nav-play-link">&#x25B6; Full Screen</a>
-        </nav>
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <img src="/static/deckdefrance_logo.png" alt="deckdefrance" style="height:80px;width:auto;">
+                <button class="sidebar-close" id="sidebar-close">&times;</button>
+            </div>
+            <div class="sidebar-items">
+                <a class="sidebar-item active" data-tab="status">Status</a>
+                <a class="sidebar-item" data-tab="control">Streaming &amp; Data</a>
+                <a class="sidebar-item" data-tab="play">Gamepad</a>
+                <a class="sidebar-item" data-tab="commands">Commands</a>
+                <a class="sidebar-item" data-tab="steer">Steer</a>
+                <a class="sidebar-item" data-tab="config">Configuration</a>
+                <a class="sidebar-item" data-tab="discover">Discover</a>
+                <a class="sidebar-item" data-tab="test">Test</a>
+                <a class="sidebar-item" data-tab="merge">Merge</a>
+                <a class="sidebar-item sidebar-fullscreen" href="/play">&#x25B6; Full Screen</a>
+            </div>
+        </div>
 
         <!-- Status Tab -->
         <div id="status" class="tab-content active">
@@ -48,6 +60,10 @@
                 <div class="status-item">
                     <span class="status-label">Stream Message:</span>
                     <span id="status-message" class="status-value">—</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Merge:</span>
+                    <span id="status-merge" class="status-value">Checking...</span>
                 </div>
             </div>
             <button class="btn btn-refresh" onclick="refreshStatusTab()">Refresh Status</button>
@@ -171,7 +187,7 @@
                 <div id="passthrough-message" class="message"></div>
                 <details style="margin-top:15px;font-size:0.9em;color:#888;">
                     <summary>Debug: Event Counts</summary>
-                    <pre id="passthrough-debug-json" style="font-size:0.75em;max-height:200px;overflow:auto;background:#1a1a2e;padding:8px;border-radius:4px;margin-top:5px;">Waiting for data...</pre>
+                    <pre id="passthrough-debug-json" style="font-size:0.75em;max-height:200px;overflow:auto;background:#1a1a1a;padding:8px;border-radius:4px;margin-top:5px;">Waiting for data...</pre>
                 </details>
             </div>
         </div>
@@ -458,10 +474,14 @@
                 <h3>Merge Status</h3>
                 <div class="test-result" id="merge-status">
                     <span class="status-badge idle">Inactive</span>
+                    <span id="merge-auto-badge" style="margin-left:10px;display:none;">
+                        <span class="status-badge connected">Auto</span>
+                    </span>
                 </div>
-                <div style="display:flex;gap:10px;margin-top:10px;">
+                <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
                     <button class="btn btn-success" id="merge-start-btn" onclick="startMerge()">Start Merge</button>
                     <button class="btn btn-danger" id="merge-stop-btn" onclick="stopMerge()" disabled>Stop Merge</button>
+                    <button class="btn btn-secondary" id="merge-save-btn" onclick="saveAutoMerge()">Save as Auto-Merge</button>
                 </div>
             </div>
 
@@ -477,6 +497,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=29"></script>
+    <script src="/static/app.js?v=35"></script>
 </body>
 </html>

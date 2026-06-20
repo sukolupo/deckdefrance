@@ -1,235 +1,276 @@
-# deckdefrance — Installation Guide
+<p align="center">
+  <img src="app/static/deckdefrance_logo.png" alt="deckdefrance" width="240">
+</p>
 
-## Prerequisites
+# Installation Guide
 
-- **Steam Deck** (or any Linux system with Bluetooth + uinput support)
-- **Python 3.12+** and `pip`
-- **Git**
-- **Tacx smart trainer** (or any BLE Cycling Power Service trainer)
-- **Bluetooth** adapter (built into Steam Deck)
+Step-by-step instructions to set up deckdefrance on a Steam Deck (or any Linux system).
 
 ---
 
-## 1. Clone the Repo
+## Prerequisites
+
+- **Python 3.12+** (pre-installed on Steam Deck / SteamOS)
+- **Bluetooth** adapter (built-in on Steam Deck)
+- **Tacx smart trainer** (or any BLE Cycling Power Service device)
+- **(Optional) Bluetooth controller** for the merge feature
+
+---
+
+## 1. Clone & Dependencies
 
 ```bash
-git clone <repo-url> /home/deck/git/deckdefrance
-cd /home/deck/git/deckdefrance
-```
+cd ~/git
+git clone <repo-url> deckdefrance
+cd deckdefrance
 
-## 2. Create a Virtual Environment
-
-```bash
+# Create virtual environment
 python -m venv .venv
+
+# Activate it
 source .venv/bin/activate
-```
 
-## 3. Install Dependencies
-
-```bash
+# Install Python packages
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## 4. udev Rules — uinput & Controller Access
+---
 
-The virtual gamepad needs permission to create uinput devices and be visible to Steam.
+## 2. udev Rules & Permissions
 
-### Install the udev rules:
+The virtual gamepad (`/dev/uinput`) and the Tacx Virtual Gamepad device need world-writable permissions.
 
 ```bash
-sudo cp 99-tacx-gamepad.rules /etc/udev/rules.d/99-tacx-gamepad.rules
-sudo udevadm control --reload-rules
-sudo udevadm trigger
+# Install udev rules
+./install-udev.sh
 ```
 
-This ensures the Tacx Virtual Gamepad gets proper permissions and Steam detects it.
+This copies `99-tacx-gamepad.rules` to `/etc/udev/rules.d/`, reloads udev, and triggers the rules.
 
-## 5. User Groups
-
-You must be in the `input` group to access `/dev/uinput`:
+Then add your user to the `input` group (required for reading evdev devices, used by merge):
 
 ```bash
 sudo usermod -aG input $USER
 ```
 
-**Log out and back in** (or reboot) for the group change to take effect.
+**Log out and back in** (or reboot) for group changes to take effect.
 
-Verify after re-login:
+---
 
-```bash
-groups | grep input
-```
-
-## 6. Configure Your Trainer MAC
-
-The configured MAC is `XX:XX:XX:XX:XX:XX` in `config.json`. To change it:
+## 3. First Run
 
 ```bash
-nano config.json
+# Start the server
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Open the web UI
+# http://localhost:8000
 ```
 
-Or use the web UI **Configuration** tab after starting the app.
+Check the **Status** tab — if everything is running you'll see server health as OK.
 
-## 7. Run the App
+---
 
-### Development (with auto-reload):
+## 4. Configure Tacx MAC Address
+
+**Option A — Auto-discover (recommended):**
+1. Wake your Tacx trainer (pedal or power-cycle)
+2. Open the **Discover** tab in the web UI
+3. Click **Scan for Tacx Trainers**
+4. Click **Select** on your trainer — MAC is auto-filled in Config
+
+**Option B — Manual:**
+1. Find your Tacx MAC via `bluetoothctl`:
+   ```bash
+   bluetoothctl scan on
+   # look for your trainer, note the MAC, then:
+   bluetoothctl scan off
+   ```
+2. Enter the MAC in the **Config** tab and click **Save**
+
+---
+
+## 5. BLE Connection Setup
+
+The app will attempt to cache BLE services automatically when you click **Start Streaming**. If that fails, do it manually:
 
 ```bash
-source .venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# 1. Wake the Tacx (pedal or power-cycle so it advertises)
+# 2. Connect to cache services:
+timeout 30 bluetoothctl -- connect F0:C5:70:96:A9:3B
+# 3. Trust it (optional but recommended):
+bluetoothctl trust F0:C5:70:96:A9:3B
+# 4. Disconnect:
+bluetoothctl disconnect F0:C5:70:96:A9:3B
+# 5. Verify services are cached:
+bluetoothctl info F0:C5:70:96:A9:3B
+#    Should show: UUID: Cycling Power (00001818-...)
 ```
 
-### Production (background process):
+**Important:** Do NOT run `bluetoothctl remove F0:C5:70:96:A9:3B` — it destroys the service cache and breaks streaming.
+
+### If `bluetoothctl -- connect` fails with `le-connection-abort-by-local`
+
+This is a transient BlueZ issue. Retry 2–3 times — it usually succeeds. The app's auto-cache retries up to 3 times automatically.
+
+---
+
+## 6. Start Streaming
+
+1. Open the **Status** tab
+2. Click **Start Streaming**
+3. Wait for "Connected" status (the UI polls every 2s while connecting)
+4. Pedal — you should see power and cadence data, and the chart should update
+
+### If streaming fails
+
+- "Device with address ... was not found" → BLE services not cached. Follow step 5.
+- Tacx shows 0W → power-cycle the trainer (unplug USB/power for 10s)
+- Connection drops → the app auto-reconnects up to 10 times
+
+---
+
+## 7. (Optional) Controller Merge
+
+Merge a Bluetooth controller so both the Tacx mappings and your controller feed into one virtual gamepad.
+
+### Pair the controller
+
+1. Go to Steam Deck Settings → Bluetooth → Pair a new device
+2. Put your controller in pairing mode and select it
+
+### Start merge
+
+1. Launch your game and select **Tacx Virtual Gamepad** as Controller 1
+2. Open the **Merge** tab in the web UI
+3. Click **Scan** to list available gamepad devices
+4. You'll see one or more "Microsoft X-Box 360 pad N" entries (these are Steam Input virtual wrappers)
+   - The first one (0) is usually the Tacx Virtual Gamepad itself — **do not merge this**
+   - The second one (1) is typically your built-in Deck controller
+   - If you have an external controller paired, there may be more
+5. Click **Detect** on a device — if events appear immediately without touching anything, that's the Deck's built-in controller (Steam Input is already driving it)
+6. Click **Start Merge** on the correct device
+7. Both the Tacx mappings and your physical controls now feed into **Tacx Virtual Gamepad**
+
+### Important notes
+
+- **Set Tacx Virtual Gamepad as Controller 1 in the game first** — this activates Steam Input's virtual Xbox pads, making them available in the device list
+- **The device that shows events immediately on Detect is the one to merge** — it's the Deck's built-in controller already being driven by Steam Input
+- **Do NOT merge the first "Microsoft X-Box 360 pad" (index 0)** — that's likely the Tacx Virtual Gamepad itself
+- **Merge only produces events in game mode** — Steam Input only drives its virtual Xbox pads when a game is consuming them
+- **The left trigger now forwards through merge** — only the right trigger is reserved for Tacx power mapping
+
+---
+
+## 8. Auto-Start (systemd User Service)
+
+To have deckdefrance start automatically on boot:
 
 ```bash
-source .venv/bin/activate
-nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > deckdefrance.log 2>&1 &
+./install-service.sh
 ```
 
-Or use the convenience script (kills any running instance first):
+This creates and enables a systemd user service at `~/.config/systemd/user/deckdefrance.service`.
+
+### Manage the service
+
+```bash
+systemctl --user start deckdefrance     # start now
+systemctl --user stop deckdefrance      # stop
+systemctl --user restart deckdefrance   # restart
+systemctl --user status deckdefrance    # check status
+journalctl --user -u deckdefrance -f    # follow logs
+```
+
+### Running manually (without systemd)
+
+```bash
+# Production (single worker, kills old instance first)
+./start.sh
+
+# Or directly
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Background with nohup
+nohup .venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > deckdefrance.log 2>&1 &
+```
+
+**Always use a single worker** — multiple workers create duplicate uinput devices.
+
+---
+
+## 9. Production Start Script
+
+`start.sh` kills any existing deckdefrance process and starts fresh:
 
 ```bash
 ./start.sh
 ```
 
-### Access the web UI:
+Logs go to `deckdefrance.log` in the project root.
 
-Open `http://localhost:8000/` in a browser.
+---
 
-From another device on the same network: `http://<steam-deck-ip>:8000/`
+## 10. Docker (Alternative)
 
-### Stop the app:
+If you prefer Docker:
 
 ```bash
-pkill -f "uvicorn app.main:app"
+docker compose up --build
 ```
+
+Note: Docker requires extra configuration for Bluetooth and uinput device access on the Steam Deck. Local installation is recommended.
 
 ---
 
-## 8. Steam Controller Integration
+## FTP Presets
 
-The Tacx Virtual Gamepad is configured as an Xbox 360 controller (`vendor=0x045e, product=0x028e`). After the app is running, Steam should detect it.
+The **Config** tab includes preset profiles based on Functional Threshold Power:
 
-> **Note:** Some games (e.g. Tour de France) only accept input from the first controller (js0). Since the Tacx pad is a separate device, the game won't see inputs from both the Steam Deck and the Tacx pad unless you use the **Controller Passthrough** feature to combine them into one device.
+| Preset | FTP | Max Trigger | Race Mode | Button A | Cadence |
+|--------|-----|-------------|-----------|----------|---------|
+| Beginner | ~75W | 150W | 90W | 130W | 80 RPM |
+| Average | ~125W | 250W | 120W | 200W | 90 RPM |
+| Competitive | ~200W | 350W | 180W | 280W | 95 RPM |
+| Pro | ~300W | 500W | 250W | 400W | 100 RPM |
 
-### Controller Passthrough (Recommended)
+---
 
-The **Controller Passthrough** feature reads inputs from the Steam Deck controller (or any gamepad) and forwards them through the Tacx Virtual Gamepad. This means the game sees **one controller** that combines:
-- Steam Deck controls (left stick, dpad, face buttons, bumpers, triggers)
-- Tacx trainer inputs (right trigger from power mapping, configurable button presses)
+## Troubleshooting
 
-#### How to use:
+### Permission denied on `/dev/uinput`
+→ Run `./install-udev.sh` and log out/in
 
-1. Start the app (see step 7)
-2. Open the web UI at `http://localhost:8000/`
-3. Go to the **Control** tab
-4. Under **Controller Passthrough**, click **Start Passthrough**
-   - The app auto-detects the Steam Deck's virtual Xbox 360 pad
-   - All Steam Deck inputs are forwarded to the Tacx Virtual Gamepad
-5. In Steam, configure your game to use **Tacx Virtual Gamepad** as player 1 instead of the Steam Deck controller
-   - Open Steam Big Picture → Controller Settings for your game
-   - Select "Tacx Virtual Gamepad" as the active controller
-6. Optionally start BLE streaming to also map trainer power to the right trigger
+### Permission denied on `/dev/input/event*`
+→ Run `sudo usermod -aG input $USER` and log out/in
 
-The passthrough runs independently from BLE streaming — you can use the Steam Deck controls even without a trainer connected.
+### BLE connection keeps failing
+- Wake the Tacx (pedal or power-cycle)
+- Run `bluetoothctl -- connect <mac>` manually to re-cache services
+- Power-cycle the Tacx (unplug 10s)
+- If you ran `bluetoothctl remove`, the service cache is gone — redo step 5
 
-### Manual Steam Setup (Alternative)
+### Controller not detected in Merge tab
+- Make sure the controller is paired via Steam Deck Bluetooth settings
+- Try probing with the game running (Steam Input virtual pads only activate when a game is consuming them)
+- Check each "Microsoft X-Box 360 pad N" entry — one of them is yours
 
-If you prefer not to use passthrough, configure **Additional Controllers** in Steam:
+### Right trigger works but left trigger doesn't in game
+- The left trigger should now forward through merge (fixed in `merge.py`)
+- Make sure you've restarted the server after pulling updates
 
-1. Open **Steam Big Picture** → launch your game
-2. Press **Steam button** → **Controller Settings** → select the game's config
-3. Near the bottom you'll see **"Additional Controllers"** — click it
-4. Bind game actions to **both** the Steam Deck controller and the Tacx pad
-5. Steam merges inputs from all configured controllers
-
-A pre-made template `controller_tacx_gamepad.vdf` can help with step 4:
+### Port 8000 already in use
 ```bash
-cp controller_tacx_gamepad.vdf ~/.steam/steam/controller_base/templates/
+pkill -f "uvicorn"
 ```
 
-### If Steam doesn't see the Tacx pad:
+### Server won't start
+```bash
+# Check Python version
+python --version  # needs 3.12+
 
-- Restart the deckdefrance app (it creates the device on startup)
-- Restart Steam
-- Run `ls /dev/input/js*` to confirm a Tacx pad `js*` exists
-- Run `cat /proc/bus/input/devices | grep -A10 "Tacx Virtual Gamepad"` to verify vendor/product IDs
-
----
-
-## 9. BLE Streaming
-
-1. Open the web UI at `http://localhost:8000/`
-2. Go to the **Discovery** tab and scan for your Tacx trainer
-3. Go to the **Config** tab and verify the MAC address
-4. Go to the **Control** tab and click **Start Streaming**
-5. The chart will show live power/cadence data
-6. The right trigger (ABS_RZ) output scales 0-255 from 0–max_target_watts (default 250W)
-
----
-
-## 10. Virtual Steering
-
-The **Steer** tab provides a draggable virtual joystick that controls the in-game character's left stick (steering).
-
-1. Navigate to the **Steer** tab in the web UI
-2. Drag the purple thumbstick with your mouse or touch
-3. X and Y values (-1 to 1) are sent to the left stick of the Tacx Virtual Gamepad
-4. Release to snap back to center
-5. Works independently of BLE streaming — no trainer connection required
-
-The joystick sends updates at ~30fps via `POST /api/joystick` with `{ x, y }` in -1 to 1 range, mapped to 0–65535 on the uinput device.
-
-Works alongside the **Controller Passthrough** feature — both write to the same Tacx Virtual Gamepad, so the game sees steering from either source.
-
-### Remote Steering from a Phone or Tablet
-
-Open the web UI on any device on the same network:
-
-1. Find the Steam Deck's IP address:
-   ```bash
-   ip addr show | grep "inet " | grep -v 127.0.0.1
-   ```
-2. On your phone or tablet, open a browser to `http://<steam-deck-ip>:8000/`
-3. Go to the **Steer** tab and drag the virtual joystick to control the game
-
-This works over Wi-Fi — no trainer or BLE connection needed. The joystick input goes directly to the uinput device on the Steam Deck.
-
----
-
-## 11. Troubleshooting
-
-| Problem | Fix |
-|---------|-----|
-| `PermissionError: /dev/uinput` | Not in `input` group — run `sudo usermod -aG input $USER` and re-login |
-| Steam doesn't detect Tacx pad | Restart app, restart Steam, check `/dev/input/js*` for Tacx pad |
-| BLE connection fails | Ensure trainer is powered on, Bluetooth is enabled, MAC is correct |
-| `ModuleNotFoundError` | Activate venv: `source .venv/bin/activate` |
-| Port 8000 in use | `pkill -f "uvicorn"` or use `--port 8001` |
-| Web UI not loading | `curl http://localhost:8000/` — check if server is running |
-| Garbled text in terminal | Use Konsole instead of default terminal, or set `TERM=xterm-256color` |
-
----
-
-## File Layout
-
-```
-deckdefrance/
-├── INSTALL.md              ← this file
-├── AGENTS.md               ← project overview (for AI assistants)
-├── start.sh                ← convenience startup script
-├── controller_tacx_gamepad.vdf ← Steam Input template for Tacx pad
-├── 99-tacx-gamepad.rules   ← udev rule for Steam detection
-├── config.json             ← persistent config (MAC, thresholds)
-├── requirements.txt        ← Python dependencies
-├── Dockerfile              ← Docker image
-├── docker-compose.yml      ← Docker Compose
-└── app/
-    ├── main.py             ← FastAPI app + routes + streaming
-    ├── mapper.py           ← uinput device + power mapping
-    ├── config.py           ← JSON config read/write
-    ├── discovery.py        ← BLE device scanning
-    ├── passthrough.py      ← Steam Deck controller passthrough to uinput
-    └── static/             ← Web UI (HTML, JS, CSS)
+# Check dependencies
+source .venv/bin/activate
+pip install -r requirements.txt
 ```

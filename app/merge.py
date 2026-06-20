@@ -6,6 +6,7 @@ sees one combined controller with both Tacx mappings and external inputs.
 """
 
 import asyncio
+import time
 from evdev import InputDevice, ecodes
 from .mapper import device
 
@@ -19,7 +20,8 @@ _TARGET_ABS_RANGES = {
 }
 
 # Axes the Tacx mapper owns exclusively — merge skips these to avoid overwriting
-_TACX_RESERVED_AXES = {ecodes.ABS_Z, ecodes.ABS_RZ}
+# ABS_RZ (right trigger) is used for Tacx power mapping; ABS_Z (left trigger) is free
+_TACX_RESERVED_AXES = {ecodes.ABS_RZ}
 
 # Merge state
 _merge_task: asyncio.Task | None = None
@@ -113,6 +115,48 @@ async def stop_merge() -> dict:
             pass
         _merge_task = None
     return {"status": "stopped"}
+
+
+async def probe_device(source_path: str, timeout: float = 3.0) -> dict:
+    """Open a device and watch for events briefly to help identify it.
+
+    Returns what event types/codes were detected so the user can confirm
+    which device is their controller by pressing a button or moving a stick.
+    """
+    def _probe():
+        try:
+            source = InputDevice(source_path)
+        except (FileNotFoundError, PermissionError, OSError) as e:
+            return {"detected": False, "error": str(e)}
+
+        result: dict = {"detected": False, "events": [], "device_name": source.name}
+        source.grab()
+        try:
+            deadline = time.time() + timeout
+            while time.time() < deadline:
+                event = source.read_one()
+                if event is None:
+                    time.sleep(0.05)
+                    continue
+                if event.type != 0:
+                    code_name = ecodes.KEY.get(event.code) or ecodes.ABS.get(event.code) or f"0x{event.code:02x}"
+                    type_name = "EV_KEY" if event.type == ecodes.EV_KEY else "EV_ABS" if event.type == ecodes.EV_ABS else f"type={event.type}"
+                    result["events"].append({
+                        "type": type_name,
+                        "code": code_name,
+                        "value": event.value,
+                    })
+                    if len(result["events"]) >= 5:
+                        break
+            result["detected"] = len(result["events"]) > 0
+        except Exception as e:
+            result["error"] = str(e)
+        finally:
+            source.ungrab()
+            source.close()
+        return result
+
+    return await asyncio.to_thread(_probe)
 
 
 def get_merge_status() -> dict:
