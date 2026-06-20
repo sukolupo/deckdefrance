@@ -20,7 +20,8 @@ _TARGET_ABS_RANGES = {
 }
 
 # Axes the Tacx mapper owns exclusively — merge skips these to avoid overwriting
-_TACX_RESERVED_AXES = {ecodes.ABS_Z, ecodes.ABS_RZ}
+# ABS_RZ (right trigger) is used for Tacx power mapping; ABS_Z (left trigger) is free
+_TACX_RESERVED_AXES = {ecodes.ABS_RZ}
 
 # Merge state
 _merge_task: asyncio.Task | None = None
