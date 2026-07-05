@@ -2,11 +2,9 @@
   <img src="app/static/deckdefrance_white_square.png" alt="deckdefrance" width="320">
 </p>
 
-# deckdefrance
+> **Turn any bike trainer into a game controller. Ride in Tour de France, race in Rocket League, drive in Forza — if a game supports a controller, deckdefrance works with it.**
 
-**Tacx turbo trainer → Tour de France controller mapper.** Connects to a Tacx smart trainer over BLE, maps power/cadence/resistance to a virtual gamepad (uinput), merges a paired Bluetooth controller into the same device, and serves a web dashboard with a full-screen touch gamepad page.
-
-The game sees **one** controller — *Tacx Virtual Gamepad* — with all inputs: Tacx power→trigger mappings + Bluetooth controller joystick/buttons.
+When you pedal harder, the game goes faster. When you steer with a Bluetooth controller, the game turns. Everything feeds into one virtual gamepad that the game sees as a single controller.
 
 <p align="center">
   <a href="https://youtu.be/fl-AArkezSE">
@@ -16,261 +14,148 @@ The game sees **one** controller — *Tacx Virtual Gamepad* — with all inputs:
 
 ---
 
-## Features
+## What It Works With
 
-- **BLE Streaming** — Connects to Tacx trainers via Cycling Power Service with auto-reconnect (up to 10 retries)
-- **Virtual Gamepad** — Creates a uinput Xbox 360 controller (0x045e/0x028e) with 8 axes + 11 buttons
-- **Configurable Mappings** — Map power/cadence/resistance to triggers, buttons, or sticks
-- **Controller Merge** — Forward a Bluetooth gamepad's inputs to the same virtual device
-- **Web Dashboard** — Status monitoring, live chart, config, BLE discovery, steering, test controls
-- **Full-Screen Touch Gamepad** — PWA `/play` page with virtual joystick and buttons (installable on Android)
-- **Auto-Cache BLE Services** — Automatically caches BlueZ services before connecting
-- **FTP Presets** — Beginner / Average / Competitive / Pro power threshold profiles
-- **PWA Support** — Installable web app with service worker caching
+### Compatible Trainers
+
+Any smart trainer that broadcasts **Cycling Power Service** over Bluetooth Low Energy. The `pycycling` library we use has been tested with:
+
+- **Tacx** — NEO, NEO 2T, Flux, Bushido, Vortex, Satori, Booster
+- **Elite** — Suito-T, Justo, Direto, Drivo, Rampa, Sterzo Smart (steering plate)
+- **Wahoo** — KICKR, KICKR Core (broadcasts CPS — untested but should work)
+- **Zwift Hub / Zwift Hub One** (broadcasts CPS — untested but should work)
+- **CycleOps** — Magnus, H3 (broadcasts CPS — untested but should work)
+- **Garmin** — Vector 3 power meter pedals
+- **Magene** — S3+ Speed/Cadence sensor
+- **Power meters** — Any BLE power meter pedals or crank-based meters (4iiii, Stages, Favero, etc.)
+
+If your trainer shows power in apps like Zwift or TrainerRoad, it'll work here.
+
+### Compatible Games
+
+Any game that supports a controller. The app creates a standard Xbox 360 virtual gamepad, so it shows up in every game on Steam. Great for:
+
+- **Tour de France 2023 / 2024 / 2025** (the original use case)
+- **Rocket League** — pedal for boost, steer with a controller
+- **Forza Horizon / Motorsport** — power = acceleration
+- **Euro Truck Simulator / American Truck Simulator** — cadence = speed
+- **Grand Theft Auto V** — throttle with your legs
+- **Cyberpunk 2077** — any driving game, really
+- **Any racing or driving game**
+
+### What You'll Need
+
+- A **Steam Deck** (or any Linux PC)
+- A **compatible smart trainer** (see above)
+- A **Bluetooth controller** (Xbox, PlayStation, Steam Controller) — optional if you just want power/speed control
 
 ---
 
-## Quick Start
+## Quick Start (5 minutes)
+
+Open the **Terminal** app (Konsole) and run:
 
 ```bash
-# 1. Install udev rules (required once for uinput access)
-./install-udev.sh
-
-# 2. Start the server
-./start.sh
-# Or manually: .venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-# 3. Open in browser
-open http://localhost:8000
+cd ~/git/deckdefrance
+./setup.sh
 ```
 
+One command. Type your password if prompted. The server starts automatically.
+
+<details>
+<summary><b>Advanced: run steps individually</b></summary>
+
+```bash
+./install-udev.sh   # permissions (once)
+./start.sh          # start the server
+```
+
+</details>
+
+<details>
+<summary><b>Advanced: start manually</b></summary>
+
+```bash
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Use this if you want to see server logs in the terminal or run with auto-reload for development.
+
+</details>
+
+### 2. Open the Dashboard
+
+On your Steam Deck, open a web browser and go to:
+
+```
+http://localhost:8000
+```
+
+You'll see the **deckdefrance** dashboard.
+
+### 3. Set Up Your Trainer
+
+1. Click the **Discover** tab
+2. Click **Scan for Tacx Trainers**
+3. Find your trainer in the list and click **Select**
+4. Go to the **Status** tab and click **Start Streaming**
+
+Wait about 15–30 seconds. Once it says "Connected", start pedaling — you'll see power and cadence data on the chart.
+
+### 4. Play the Game
+
+1. Start **Tour de France** on Steam
+2. Go to the game's controller settings
+3. Select **Tacx Virtual Gamepad** as your controller
+4. Pedal to accelerate — the right trigger responds to your power
+
 ---
 
-## Installation
+## Adding a Bluetooth Controller
 
-See [INSTALL.md](INSTALL.md) for a complete step-by-step guide covering:
+Want to steer with a physical controller too? Here's how:
 
-- Python virtual environment setup
-- udev rules and permissions
-- BLE connection setup
-- Controller merge configuration
-- Auto-start with systemd
+1. First, pair your controller with the Steam Deck (System Settings → Bluetooth)
+2. Start Tour de France and set **Tacx Virtual Gamepad** as Controller 1
+3. **Switch to the web browser** (don't close the game)
+4. Open the dashboard's **Merge** tab
+5. Click **Scan**
+6. You'll see some "Microsoft X-Box 360 pad" devices
+   - The first one (index 0) is the Tacx Virtual Gamepad — skip it
+   - The next one is your built-in Deck controls or your Bluetooth controller
+7. Click **Detect** on each one until you see events appear
+   - If events show up immediately without touching anything, that's the Deck's built-in controls
+   - If you have to press a button on your controller for events to appear, that's your Bluetooth controller
+8. Click **Start Merge** on the one you want
+9. Go back to your game — both pedaling and your controller now work together
 
 ---
 
-## Web UI
+## Dashboard Tabs
 
-| Tab | Description |
+| Tab | What it does |
 |-----|-------------|
-| **Status** | Connection state, live power/cadence data, real-time chart |
-| **Control** | Manual virtual joystick, D-pad, and button test |
-| **Discover** | BLE scan for Tacx trainers |
-| **Steer** | Draggable virtual joystick widget with mouse/touch |
-| **Config** | MAC address, mappings, FTP presets, thresholds |
-| **Test** | Sample mapping preview + BLE connection test |
-| **Merge** | Scan, probe, and start Bluetooth controller merge |
-| **Play** | `/play` full-screen touch gamepad (PWA start page) |
+| **Status** | See your power, cadence, and a live chart. Start/stop the trainer connection |
+| **Control** | Test buttons and joysticks manually |
+| **Discover** | Find your Tacx trainer via Bluetooth |
+| **Steer** | A virtual joystick you can drag with your mouse/touchscreen |
+| **Config** | Change settings like max power, button thresholds, or use a preset (Beginner/Average/Competitive/Pro) |
+| **Test** | Preview how your settings will work without needing the trainer |
+| **Merge** | Add a Bluetooth controller to work alongside the trainer |
 
 ---
 
-## Configurable Mappings
+## Tips
 
-Mappings define how trainer metrics map to controller outputs. Configured in `config.json` or the Config tab:
-
-```json
-{
-  "tacx_mac_address": "F0:C5:70:96:A9:3B",
-  "max_target_watts": 250,
-  "cadence_threshold": 90,
-  "power_threshold_race": 120,
-  "power_threshold_button_a": 200,
-  "gear_multiplier": 2.0,
-  "mappings": [
-    { "source": "power", "target": "right_trigger" },
-    { "source": "power", "target": "btn_a", "threshold": 200 }
-  ]
-}
-```
-
-### Sources & Targets
-
-| Source | Description |
-|--------|-------------|
-| `power` | Instantaneous power in watts |
-| `cadence` | Pedal cadence in RPM |
-| `resistance` | Trainer resistance (future) |
-
-| Target | Description | Range |
-|--------|-------------|-------|
-| `right_trigger` | Right trigger (Tacx power) | 0–255 |
-| `left_trigger` | Left trigger | 0–255 |
-| `left_stick_x/y` | Left analog stick | 0–65535 |
-| `right_stick_x/y` | Right analog stick | 0–65535 |
-| `btn_a/b/x/y` | Face buttons | Press/release |
-
-**Scaling rules:**
-- **Axes**: source value 0→max scales linearly to target range. Y-stick axes center at 50% (32768).
-- **Buttons**: press when source exceeds `threshold`, release when below.
+- **Run in the background** — After `./start.sh`, you can close the terminal and the server keeps running. Open the browser whenever you need it
+- **Stop the server** — `pkill -f uvicorn` in a terminal
+- **Restart** — `./start.sh` again (it kills the old process first)
+- **Restart after config changes** — Click **Stop Streaming** then **Start Streaming** in the dashboard
+- **Signal drops** — The app auto-reconnects up to 10 times. Just wait
+- **Need the full guide?** See [INSTALL.md](INSTALL.md) for detailed setup, troubleshooting, and auto-start
 
 ---
 
-## Project Structure
+## What's Under the Hood
 
-```
-deckdefrance/
-├── AGENTS.md                 # Full project knowledge base
-├── README.md                 # This file
-├── INSTALL.md                # Detailed installation guide
-├── config.json               # Persistent configuration
-├── requirements.txt          # Python dependencies
-├── Dockerfile                # Docker image
-├── docker-compose.yml        # Docker Compose
-├── start.sh                  # Production start script
-├── install-udev.sh           # Install udev rules for uinput
-├── install-service.sh        # Install systemd user service
-├── 99-tacx-gamepad.rules     # udev rules for Tacx Virtual Gamepad
-└── app/
-    ├── __init__.py
-    ├── main.py               # FastAPI app — routes, streaming, auto-cache
-    ├── mapper.py             # Tacx → controller mapping + shared uinput device
-    ├── config.py             # JSON config read/write + FTP presets
-    ├── discovery.py          # BLE device discovery
-    ├── passthrough.py        # (DEPRECATED) Steam Deck passthrough
-    ├── merge.py              # Bluetooth controller merge into shared uinput
-    └── static/
-        ├── index.html        # Web UI (all tabs)
-        ├── play.html         # Full-screen touch gamepad (PWA)
-        ├── app.js            # Frontend logic
-        ├── style.css         # Yellow/black Tour de France theme
-        ├── manifest.json     # PWA manifest
-        ├── icon.svg          # PWA app icon
-        ├── sw.js             # Service worker
-        ├── deckdefrance_logo.png
-        ├── deckdefrance_white.png
-        ├── deckdefrance_black.png
-        └── deckdefrance_white_square.png
-```
-
----
-
-## API Endpoints
-
-### Health & Config
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health` | Server status with streaming/merge state |
-| GET | `/api/config` | Get current config |
-| POST | `/api/config` | Save config (partial update) |
-| GET | `/api/config/presets` | List FTP presets |
-
-### Streaming
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/start-streaming` | Start BLE streaming |
-| POST | `/api/stop-streaming` | Stop streaming |
-| GET | `/api/stream-status` | `{ streaming, connecting, message }` |
-| GET | `/api/stream-data` | Latest `{ watts, cadence, timestamp }` |
-| GET | `/api/stream-log` | Last 100 data points for chart |
-
-### Controller
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/map` | Test mapping with sample values |
-| POST | `/api/joystick` | Set left stick position (-1..1) |
-| POST | `/api/dpad` | Set D-pad axes (-1/0/1) |
-| POST | `/api/button` | Press/release a virtual button |
-
-### Discovery
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/test-trainer` | Test BLE connection to configured MAC |
-| POST | `/api/discover-tacx` | Scan for Tacx trainers (5s) |
-| POST | `/api/discover-all` | Scan for all BLE devices |
-
-### Merge
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/merge/devices` | List gamepad evdev devices |
-| GET | `/api/merge/status` | Merge active state |
-| POST | `/api/merge/probe` | Watch device for 3s, return events |
-| POST | `/api/merge/start` | Start merge on source device path |
-| POST | `/api/merge/stop` | Stop merge |
-
-### Frontend
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/` | Web dashboard |
-| GET | `/play` | Full-screen touch gamepad |
-
----
-
-## BLE Streaming Flow
-
-```
-Tacx Trainer (BLE)
-  → BleakClient (async with, auto-reconnects up to 10×)
-  → pycycling CyclingPowerService notifications
-  → power_handler: extracts watts, calculates cadence from crank revs
-  → apply_mappings(): scales values per config, emits to uinput
-  → Frontend polls /api/stream-data (200ms) + /api/stream-log (1s)
-  → Chart.js renders rolling 120-point buffer (Watts, Cadence, Trigger)
-```
-
-### Reconnection Behavior
-- On BLE drop: up to 10 retries with 3s delay (split into 0.5s polls)
-- UI shows "Connecting..." during reconnection
-- No idle data timeout — connection stays alive when not pedaling
-- `async with BleakClient` pattern handles connect/disconnect lifecycle
-
----
-
-## Controller Merge
-
-Merge a paired Bluetooth controller with the Tacx trainer into one combined virtual gamepad:
-
-```
-Bluetooth Controller (evdev)
-  → merge.py reads axis/button events
-  → scales axis values from source range to target 0–65535
-  → skips ABS_RZ (right trigger reserved for Tacx power)
-  → writes to shared uinput device
-  → Game sees Tacx Virtual Gamepad with ALL inputs
-```
-
-### Forwarded Inputs
-| Source | Forwarded | Notes |
-|--------|-----------|-------|
-| Left stick (ABS_X/Y) | ✅ Scaled | Source min/max → 0..65535 |
-| Right stick (ABS_RX/RY) | ✅ Scaled | Source min/max → 0..65535 |
-| D-pad (ABS_HAT0X/Y) | ✅ Scaled | -1/1 forwarded as-is |
-| Face buttons (A/B/X/Y) | ✅ Raw | EV_KEY forwarded as-is |
-| Bumpers/thumb clicks | ✅ Raw | EV_KEY forwarded as-is |
-| Left trigger (ABS_Z) | ✅ Scaled | Now forwarded |
-| Right trigger (ABS_RZ) | ❌ Skipped | Reserved for Tacx power |
-
----
-
-## Known Issues
-
-- **Merge events only in game mode** — Steam Input virtual Xbox pads only produce events when a game consuming them is running. Probe/scan with the game open.
-- **Steam Deck's built-in controller** — It works via merge! Once the game loads and **Tacx Virtual Gamepad** is set as Controller 1, the built-in Deck controls appear as a "Microsoft X-Box 360 pad N" device. When you click **Detect**, events show up immediately (Steam Input is already driving it) — that's the one to merge. Set Tacx Virtual Gamepad as first controller, merge the other pad as second.
-- **BLE + Classic Bluetooth interference** — The Deck's single radio struggles with mixed connections. Use a USB BT dongle for the Tacx, or a USB cable for the controller.
-- **`le-connection-abort-by-local`** — Transient BlueZ issue. Auto-cache retries up to 3×. If it persists, power-cycle the Tacx.
-- **Do NOT run `bluetoothctl remove`** — Destroys the BlueZ service cache. `async with BleakClient` requires cached services.
-
----
-
-## Development
-
-```bash
-# With auto-reload (development)
-.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Single worker only — multiple workers create duplicate uinput devices
-```
-
----
-
-## License
-
-MIT
+For the curious: Python + FastAPI backend, Bluetooth Low Energy via `bleak`/`pycycling`, virtual gamepad via `evdev.UInput`, vanilla JS frontend with Chart.js. The app creates a virtual Xbox 360 controller that both the Tacx power data and your physical controller feed into, so the game sees one combined device.
