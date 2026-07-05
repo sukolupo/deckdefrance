@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app/static/deckdefrance_logo.png" alt="deckdefrance" width="320">
+  <img src="app/static/deckdefrance_white_square.png" alt="deckdefrance" width="320">
 </p>
 
 # deckdefrance
