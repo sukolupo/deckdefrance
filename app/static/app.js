@@ -101,7 +101,7 @@ async function loadConfig() {
         const response = await fetch('/api/config');
         const config = await response.json();
 
-        document.getElementById('tacx-mac').value = config.tacx_mac_address || '';
+        document.getElementById('trainer-mac').value = config.trainer_mac_address || '';
         document.getElementById('max-watts').value = config.max_target_watts || 300;
         document.getElementById('cadence-threshold').value = config.cadence_threshold || 95;
         document.getElementById('power-race').value = config.power_threshold_race || 150;
@@ -186,7 +186,7 @@ if (configForm) {
 
         const formData = new FormData(e.target);
         const config = {
-        tacx_mac_address: formData.get('tacx_mac_address'),
+        trainer_mac_address: formData.get('trainer_mac_address'),
         max_target_watts: parseFloat(formData.get('max_target_watts')),
         cadence_threshold: parseFloat(formData.get('cadence_threshold')),
         power_threshold_race: parseFloat(formData.get('power_threshold_race')),
@@ -344,7 +344,7 @@ Details: ${data.message || 'Unable to reach trainer'}
         document.getElementById('connection-test').innerHTML = '<span class="status-badge disconnected">✗ Error</span>';
     } finally {
         btnElement.disabled = false;
-        btnText.textContent = 'Test Tacx Connection';
+        btnText.textContent = 'Test Trainer Connection';
     }
 }
 
@@ -390,17 +390,17 @@ function showMessage(elementId, message, type) {
 }
 
 // Device Discovery
-async function discoverTacxTrainers() {
-    const btnElement = document.querySelector('[onclick="discoverTacxTrainers()"]');
+async function discoverBikeTrainers() {
+    const btnElement = document.querySelector('[onclick="discoverBikeTrainers()"]');
     const btnText = document.getElementById('discover-btn-text');
     const listDiv = document.getElementById('discovered-list');
 
     btnElement.disabled = true;
     btnText.textContent = 'Scanning...';
-    listDiv.innerHTML = '<p>Scanning for Tacx trainers... (this may take up to 5 seconds)</p>';
+    listDiv.innerHTML = '<p>Scanning for Trainers... (this may take up to 5 seconds)</p>';
 
     try {
-        const response = await fetch('/api/discover-tacx', {
+        const response = await fetch('/api/discover-trainer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -412,7 +412,7 @@ async function discoverTacxTrainers() {
         if (data.error) {
             listDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
         } else if (data.found === 0) {
-            listDiv.innerHTML = '<p>No Tacx trainers found. Make sure your trainer is powered on and in pairing mode.</p>';
+            listDiv.innerHTML = '<p>No Trainers found. Make sure your trainer is powered on and in pairing mode.</p>';
         } else {
             let html = '<div class="device-list-items">';
             data.devices.forEach(device => {
@@ -433,7 +433,7 @@ async function discoverTacxTrainers() {
         listDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
     } finally {
         btnElement.disabled = false;
-        btnText.textContent = 'Scan for Tacx Trainers';
+        btnText.textContent = 'Scan for Trainers';
     }
 }
 
@@ -487,7 +487,7 @@ async function discoverAllDevices() {
 
 function selectDevice(macAddress, deviceName) {
     // Set the MAC address in the config tab
-    document.getElementById('tacx-mac').value = macAddress;
+    document.getElementById('trainer-mac').value = macAddress;
     
     // Switch to config tab
     switchTab('config');
@@ -1054,7 +1054,7 @@ async function startPassthrough() {
         const res = await fetch('/api/passthrough/start', { method: 'POST' });
         const data = await res.json();
         if (data.status === 'started' || data.status === 'already_active') {
-            showMessage('passthrough-message', 'Passthrough started — Steam Deck inputs are now forwarded through the Tacx pad', 'success');
+            showMessage('passthrough-message', 'Passthrough started — Steam Deck inputs are now forwarded through the Trainer pad', 'success');
         } else {
             showMessage('passthrough-message', data.message || 'Failed to start passthrough', 'error');
         }

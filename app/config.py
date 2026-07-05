@@ -36,7 +36,7 @@ FTP_PRESETS = {
 }
 
 DEFAULT_CONFIG = {
-    "tacx_mac_address": "XX:XX:XX:XX:XX:XX",
+    "trainer_mac_address": "XX:XX:XX:XX:XX:XX",
     "max_target_watts": 250,
     "cadence_threshold": 90,
     "power_threshold_race": 120,

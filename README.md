@@ -96,7 +96,7 @@ You'll see the **deckdefrance** dashboard.
 ### 3. Set Up Your Trainer
 
 1. Click the **Discover** tab
-2. Click **Scan for Tacx Trainers**
+2. Click **Scan for Trainers**
 3. Find your trainer in the list and click **Select**
 4. Go to the **Status** tab and click **Start Streaming**
 
@@ -106,7 +106,7 @@ Wait about 15–30 seconds. Once it says "Connected", start pedaling — you'll 
 
 1. Start **Tour de France** on Steam
 2. Go to the game's controller settings
-3. Select **Tacx Virtual Gamepad** as your controller
+3. Select **Trainer Virtual Gamepad** as your controller
 4. Pedal to accelerate — the right trigger responds to your power
 
 ---
@@ -116,12 +116,12 @@ Wait about 15–30 seconds. Once it says "Connected", start pedaling — you'll 
 Want to steer with a physical controller too? Here's how:
 
 1. First, pair your controller with the Steam Deck (System Settings → Bluetooth)
-2. Start Tour de France and set **Tacx Virtual Gamepad** as Controller 1
+2. Start Tour de France and set **Trainer Virtual Gamepad** as Controller 1
 3. **Switch to the web browser** (don't close the game)
 4. Open the dashboard's **Merge** tab
 5. Click **Scan**
 6. You'll see some "Microsoft X-Box 360 pad" devices
-   - The first one (index 0) is the Tacx Virtual Gamepad — skip it
+   - The first one (index 0) is the Trainer Virtual Gamepad — skip it
    - The next one is your built-in Deck controls or your Bluetooth controller
 7. Click **Detect** on each one until you see events appear
    - If events show up immediately without touching anything, that's the Deck's built-in controls
@@ -137,7 +137,7 @@ Want to steer with a physical controller too? Here's how:
 |-----|-------------|
 | **Status** | See your power, cadence, and a live chart. Start/stop the trainer connection |
 | **Control** | Test buttons and joysticks manually |
-| **Discover** | Find your Tacx trainer via Bluetooth |
+| **Discover** | Find your trainer via Bluetooth |
 | **Steer** | A virtual joystick you can drag with your mouse/touchscreen |
 | **Config** | Change settings like max power, button thresholds, or use a preset (Beginner/Average/Competitive/Pro) |
 | **Test** | Preview how your settings will work without needing the trainer |
@@ -175,4 +175,4 @@ Want to steer with a physical controller too? Here's how:
 
 ## What's Under the Hood
 
-For the curious: Python + FastAPI backend, Bluetooth Low Energy via `bleak`/`pycycling`, virtual gamepad via `evdev.UInput`, vanilla JS frontend with Chart.js. The app creates a virtual Xbox 360 controller that both the Tacx power data and your physical controller feed into, so the game sees one combined device.
+For the curious: Python + FastAPI backend, Bluetooth Low Energy via `bleak`/`pycycling`, virtual gamepad via `evdev.UInput`, vanilla JS frontend with Chart.js. The app creates a virtual Xbox 360 controller that both the Trainer power data and your physical controller feed into, so the game sees one combined device.

@@ -11,9 +11,9 @@ from collections import deque
 from bleak import BleakClient
 from pycycling.cycling_power_service import CyclingPowerService
 from evdev import ecodes
-from .mapper import map_tacx_to_controller, apply_mappings, device, emit, _BUTTON_CODES
+from .mapper import map_trainer_to_controller, apply_mappings, device, emit, _BUTTON_CODES
 from .config import get_config, update_config, FTP_PRESETS
-from .discovery import discover_tacx_trainers, discover_all_devices
+from .discovery import discover_trainers, discover_all_devices
 from .merge import start_merge, stop_merge, get_merge_status, probe_device
 from .passthrough import (
     start_passthrough,
@@ -63,7 +63,7 @@ class ButtonRequest(BaseModel):
 
 
 class ConfigRequest(BaseModel):
-    tacx_mac_address: str | None = None
+    trainer_mac_address: str | None = None
     max_target_watts: float | None = None
     cadence_threshold: float | None = None
     power_threshold_race: float | None = None
@@ -89,7 +89,7 @@ async def health():
         "streaming": streaming_active,
         "merge_active": merge.get("active", False),
         "auto_merge_device": cfg.get("auto_merge_device", ""),
-        "trainer_configured": cfg.get("tacx_mac_address", "XX:XX:XX:XX:XX:XX") != "XX:XX:XX:XX:XX:XX",
+        "trainer_configured": cfg.get("trainer_mac_address", "XX:XX:XX:XX:XX:XX") != "XX:XX:XX:XX:XX:XX",
     }
 
 
@@ -121,7 +121,7 @@ async def save_configuration(config: ConfigRequest):
 @app.post("/api/map")
 async def map_trainer(request: MappingRequest):
     """Map trainer metrics to controller output."""
-    mapping = map_tacx_to_controller(
+    mapping = map_trainer_to_controller(
         trainer_power=request.trainer_power,
         cadence=request.cadence,
         resistance=request.resistance,
@@ -232,14 +232,14 @@ async def merge_stop():
 
 @app.post("/api/test-trainer")
 async def test_trainer_connection():
-    """Test connection to Tacx trainer."""
+    """Test connection to trainer."""
     config = get_config()
-    mac_address = config.get("tacx_mac_address", "XX:XX:XX:XX:XX:XX")
+    mac_address = config.get("trainer_mac_address", "XX:XX:XX:XX:XX:XX")
 
     if mac_address == "XX:XX:XX:XX:XX:XX":
         return {
             "connected": False,
-            "message": "Tacx MAC address not configured",
+            "message": "Trainer MAC address not configured",
         }
 
     try:
@@ -277,11 +277,11 @@ async def test_trainer_connection():
         }
 
 
-@app.post("/api/discover-tacx")
-async def discover_tacx():
-    """Discover Tacx trainers via Bluetooth scan."""
+@app.post("/api/discover-trainer")
+async def discover_trainer():
+    """Discover trainers via Bluetooth scan."""
     try:
-        devices = await discover_tacx_trainers(timeout=5)
+        devices = await discover_trainers(timeout=5)
         return {
             "found": len(devices),
             "devices": devices,
@@ -456,12 +456,12 @@ async def start_streaming():
         }
     
     config = get_config()
-    mac_address = config.get("tacx_mac_address", "XX:XX:XX:XX:XX:XX")
+    mac_address = config.get("trainer_mac_address", "XX:XX:XX:XX:XX:XX")
     
     if mac_address == "XX:XX:XX:XX:XX:XX":
         return {
             "status": "error",
-            "message": "Tacx MAC address not configured",
+            "message": "Trainer MAC address not configured",
         }
     
     # Ensure BLE services are cached in BlueZ for reliable BleakClient connection
@@ -471,13 +471,13 @@ async def start_streaming():
         if not cached:
             return {
                 "status": "error",
-                "message": "Could not cache BLE services — ensure Tacx is powered on and advertising",
+                "message": "Could not cache BLE services — ensure trainer is powered on and advertising",
             }
     
     streaming_active = True
     streaming_message = "Connecting..."
     streaming_task = asyncio.create_task(stream_trainer_data(mac_address))
-    return {"status": "starting", "message": "Connecting to Tacx trainer..."}
+    return {"status": "starting", "message": "Connecting to trainer..."}
 
 
 @app.post("/api/stop-streaming")

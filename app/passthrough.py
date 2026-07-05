@@ -35,8 +35,8 @@ _STEAM_VENDORS = {0x28de}  # Valve
 _STEAM_PRODUCTS = {0x11ff, 0x1205}  # Xbox 360 pad, Steam Controller
 # Virtual Steam pads — created by Steam Input, no live events
 _STEAM_VIRTUAL_PRODUCTS = {0x11ff}
-_TACX_VENDOR = 0x045e
-_TACX_PRODUCT = 0x028e
+_TRAINER_VENDOR = 0x045e
+_TRAINER_PRODUCT = 0x028e
 
 # Passthrough state
 _passthread: threading.Thread | None = None
@@ -110,14 +110,14 @@ def find_steam_controller() -> tuple[str, str] | None:
 
 def list_controller_devices() -> list[dict]:
     """List all joystick/gamepad evdev devices usable as passthrough or merge sources.
-    Excludes our own Tacx virtual device and Steam virtual pads (0x28de/0x11ff).
+    Excludes our own trainer virtual device and Steam virtual pads (0x28de/0x11ff).
     """
     results = []
     for path in evdev.list_devices():
         try:
             dev = InputDevice(path)
-            # Skip our own Tacx virtual device
-            if dev.info.vendor == _TACX_VENDOR and dev.info.product == _TACX_PRODUCT:
+            # Skip our own trainer virtual device
+            if dev.info.vendor == _TRAINER_VENDOR and dev.info.product == _TRAINER_PRODUCT:
                 continue
             caps = dev.capabilities()
             abs_codes = [c for c, _ in caps.get(ecodes.EV_ABS, [])]

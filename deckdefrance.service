@@ -1,5 +1,5 @@
 [Unit]
-Description=deckdefrance Tacx Trainer Controller Mapper
+Description=deckdefrance Trainer Controller Mapper
 After=network-online.target bluetooth.target
 Wants=network-online.target
 

@@ -115,12 +115,12 @@ The server is now running in the background. You can close the terminal.
 
 ---
 
-## 6. Connect Your Tacx Trainer
+## 6. Connect Your Trainer
 
 ### Step A — Find Your Trainer
 
 1. In the dashboard, click the **Discover** tab
-2. Click **Scan for Tacx Trainers**
+2. Click **Scan for Trainers**
 3. Wait 5 seconds
 4. Your trainer should appear in the list — click **Select**
 
@@ -130,7 +130,7 @@ The MAC address (a code like `F0:C5:70:96:A9:3B`) is now saved.
 
 When you click **Start Streaming**, the app will try to cache the trainer's Bluetooth services automatically. If it fails, do it manually:
 
-1. **Wake the Tacx** — pedal for a few seconds or unplug it and plug it back in
+1. **Wake the trainer** — pedal for a few seconds or unplug it and plug it back in
 2. Open a terminal and run (replace MAC with your trainer's address):
 
 ```bash
@@ -161,7 +161,7 @@ You should see `UUID: Cycling Power (00001818-...)` in the output.
 3. The status will show "Connecting..." for a few seconds, then "Connected"
 4. Start pedaling — you'll see power (Watts) and cadence (RPM) on the chart
 
-**It shows 0W?** Unplug the Tacx for 10 seconds, plug it back in, wait 30 seconds, then try again.
+**It shows 0W?** Unplug the trainer for 10 seconds, plug it back in, wait 30 seconds, then try again.
 
 ---
 
@@ -176,12 +176,12 @@ You should see `UUID: Cycling Power (00001818-...)` in the output.
 ### Merge It With the Trainer
 
 1. Start **Tour de France** (or your game) on Steam
-2. In the game's controller settings, select **Tacx Virtual Gamepad**
+2. In the game's controller settings, select **Trainer Virtual Gamepad**
 3. **Switch to the browser** (keep the game running)
 4. Open the **Merge** tab in the dashboard
 5. Click **Scan**
 6. You'll see devices named "Microsoft X-Box 360 pad N"
-   - **Skip index 0** — that's the Tacx Virtual Gamepad itself
+   - **Skip index 0** — that's the Trainer Virtual Gamepad itself
    - Try index 1 — that's usually the Steam Deck's built-in controls
    - If you have a Bluetooth controller, it may be index 2 or higher
 7. Click **Detect** on a device
@@ -237,16 +237,16 @@ Pick the one closest to your fitness. Click **Load Preset** then **Save**.
 → Run `./install-udev.sh` and log out/in
 
 ### "Device with address ... was not found"
-→ The Tacx Bluetooth services aren't cached. Run the `bluetoothctl -- connect` steps again (section 6B)
+→ The trainer Bluetooth services aren't cached. Run the `bluetoothctl -- connect` steps again (section 6B)
 
 ### Server won't start / "port already in use"
 → Run `pkill -f uvicorn`, wait 2 seconds, then `./start.sh` again
 
 ### Dashboard loads but chart is empty
-→ Click **Start Streaming** in the Status tab. Make sure your Tacx is powered on.
+→ Click **Start Streaming** in the Status tab. Make sure your trainer is powered on.
 
 ### Controller merge shows events but game doesn't respond
-→ Make sure **Tacx Virtual Gamepad** is selected as the controller in the game's settings
+→ Make sure **Trainer Virtual Gamepad** is selected as the controller in the game's settings
 
 ### Page looks broken or missing styles
 → Hold **Ctrl** and click the **Reload** button (or press Ctrl+F5) to force-refresh the page

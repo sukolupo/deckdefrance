@@ -10,7 +10,7 @@ mkdir -p "$SERVICE_DIR"
 
 cat > "$SERVICE_DST" <<EOF
 [Unit]
-Description=deckdefrance — Tacx trainer → game controller mapper
+Description=deckdefrance — Trainer → game controller mapper
 After=network-online.target bluetooth.target
 Wants=network-online.target bluetooth.target
 

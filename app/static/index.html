@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>deckdefrance - Tacx Trainer Control</title>
+    <title>deckdefrance - Bike Trainer Control</title>
     <link rel="stylesheet" href="/static/style.css?v=35">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,7 +18,7 @@
             <button class="hamburger" id="hamburger-btn" aria-label="Open menu">&#9776;</button>
             <img src="/static/deckdefrance_logo.png" alt="deckdefrance" style="height:80px;width:auto;">
         </div>
-        <p class="subtitle">Tacx Turbo Trainer to Tour de France Controller Mapper</p>
+        <p class="subtitle">Bike Turbo Trainer to Tour de France Controller Mapper</p>
 
         <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
@@ -141,7 +141,7 @@
             <div class="control-section">
                 <h3>Information</h3>
                 <p>
-                    Once streaming is started, the app will continuously read power data from your Tacx trainer 
+                    Once streaming is started, the app will continuously read power data from your Trainer 
                     and send it to the virtual controller for Tour de France to process.
                 </p>
                 <ul>
@@ -149,7 +149,7 @@
                     <li>The trainer should be connected and ready before starting the stream</li>
                     <li>The virtual gamepad will emit power values on the Right Trigger (ABS_RZ)</li>
                     <li>Click "Stop Streaming" to safely disconnect and stop data transmission</li>
-                    <li>Use <strong>Controller Passthrough</strong> to forward Steam Deck inputs through the Tacx pad so the game sees one combined controller</li>
+                    <li>Use <strong>Controller Passthrough</strong> to forward Steam Deck inputs through the Trainer pad so the game sees one combined controller</li>
                 </ul>
             </div>
 
@@ -157,9 +157,9 @@
             <div class="control-section">
                 <h3>Controller Passthrough</h3>
                 <p style="color:#666;line-height:1.5;margin-bottom:15px;">
-                    Forward Steam Deck controller inputs through the Tacx Virtual Gamepad. 
+                    Forward Steam Deck controller inputs through the Trainer Virtual Gamepad. 
                     This lets the game see <strong>one controller</strong> that combines Steam Deck controls + trainer power.
-                    Configure the game in Steam to use the "Tacx Virtual Gamepad" as player 1.
+                    Configure the game in Steam to use the "Trainer Virtual Gamepad" as player 1.
                 </p>
                 <div class="status-card">
                     <div class="status-item">
@@ -194,19 +194,19 @@
 
         <!-- Discovery Tab -->
         <div id="discover" class="tab-content">
-            <h2>Discover Tacx Trainers</h2>
+            <h2>Discover trainers</h2>
             
             <div class="discovery-section">
-                <p>Scan for available Tacx trainers on Bluetooth. Make sure your trainer is powered on and in pairing mode.</p>
-                <button class="btn btn-success" onclick="discoverTacxTrainers()">
-                    <span id="discover-btn-text">Scan for Tacx Trainers</span>
+                <p>Scan for available trainers on Bluetooth. Make sure your trainer is powered on and in pairing mode.</p>
+                <button class="btn btn-success" onclick="discoverBikeTrainers()">
+                    <span id="discover-btn-text">Scan for trainers</span>
                 </button>
             </div>
 
             <div class="discovery-section">
                 <h3>Discovered Devices</h3>
                 <div id="discovered-list" class="device-list">
-                    <p>No devices discovered yet. Click "Scan for Tacx Trainers" to start scanning.</p>
+                    <p>No devices discovered yet. Click "Scan for trainers" to start scanning.</p>
                 </div>
             </div>
 
@@ -322,9 +322,9 @@
             <h2>Configuration Parameters</h2>
             <form id="config-form" class="config-form">
                 <div class="form-group">
-                    <label for="tacx-mac">Tacx MAC Address:</label>
-                    <input type="text" id="tacx-mac" name="tacx_mac_address" placeholder="XX:XX:XX:XX:XX:XX">
-                    <small>Bluetooth MAC address of your Tacx trainer</small>
+                    <label for="trainer-mac">Trainer MAC Address:</label>
+                    <input type="text" id="trainer-mac" name="trainer_mac_address" placeholder="XX:XX:XX:XX:XX:XX">
+                    <small>Bluetooth MAC address of your trainer</small>
                 </div>
 
                 <div class="form-group">
@@ -390,7 +390,7 @@
 
         <!-- Test Tab -->
         <div id="test" class="tab-content">
-            <h2>Tacx Trainer Connection Test</h2>
+            <h2>Bike Trainer Connection Test</h2>
             
             <div class="test-section">
                 <h3>Connection Status</h3>
@@ -427,7 +427,7 @@
 
             <div class="test-section">
                 <h3>Virtual Controller Buttons</h3>
-                <p style="color:#666;margin-bottom:8px;">Test individual buttons on the Tacx Virtual Gamepad.</p>
+                <p style="color:#666;margin-bottom:8px;">Test individual buttons on the Trainer Virtual Gamepad.</p>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;">
                     <button class="btn btn-secondary" data-btn="btn_a">A</button>
                     <button class="btn btn-secondary" data-btn="btn_b">B</button>
@@ -446,7 +446,7 @@
             <div class="test-section">
                 <h3>Test Trainer Connection</h3>
                 <button class="btn btn-success" onclick="testConnection()">
-                    <span id="test-btn-text">Test Tacx Connection</span>
+                    <span id="test-btn-text">Test Trainer Connection</span>
                 </button>
                 <div id="connection-result" class="result-box" style="margin-top: 15px; display: none;">
                     <p id="connection-message"></p>
@@ -458,7 +458,7 @@
         <div id="merge" class="tab-content">
             <h2>Controller Merge</h2>
             <p style="color:#888;margin-bottom:15px;">
-                Merge an external Bluetooth controller with your Tacx virtual gamepad.
+                Merge an external Bluetooth controller with your Trainer virtual gamepad.
                 Both inputs go to the same device so the game sees one combined controller.
             </p>
 
@@ -491,7 +491,7 @@
                     1. Pair your Bluetooth controller with the Steam Deck (Settings &rarr; Bluetooth).<br>
                     2. Click <strong>Scan</strong> to find it in the list below.<br>
                     3. Select it and click <strong>Start Merge</strong>.<br>
-                    4. The controller's inputs and the Tacx trainer's mapped outputs now feed into one virtual gamepad.
+                    4. The controller's inputs and the trainer's mapped outputs now feed into one virtual gamepad.
                 </p>
             </div>
         </div>

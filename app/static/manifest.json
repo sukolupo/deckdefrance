@@ -1,7 +1,7 @@
 {
   "name": "deckdefrance",
   "short_name": "deckdefrance",
-  "description": "Tacx Turbo Trainer to Tour de France Controller Mapper",
+  "description": "Turbo Trainer to Tour de France Controller Mapper",
   "start_url": "/play",
   "display": "standalone",
   "orientation": "landscape",
