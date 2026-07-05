@@ -157,7 +157,7 @@ Want to steer with a physical controller too? Here's how:
 
 <p align="center">
   <img src="app/screenshots/controller-tab.png" width="350" alt="Full-screen Virtual touch gamepad">
-  <br><em>Play page — full-screen touch gamepad</em>
+  <br><em>Play page — full-screen Virtual touch gamepad</em>
 </p>
 
 ---
