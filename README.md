@@ -115,19 +115,30 @@ Wait about 15–30 seconds. Once it says "Connected", start pedaling — you'll 
 
 Want to steer with a physical controller too? Here's how:
 
-1. First, pair your controller with the Steam Deck (System Settings → Bluetooth)
-2. Start Tour de France and set **Trainer Virtual Gamepad** as Controller 1
-3. **Switch to the web browser** (don't close the game)
-4. Open the dashboard's **Merge** tab
-5. Click **Scan**
-6. You'll see some "Microsoft X-Box 360 pad" devices
-   - The first one (index 0) is the Trainer Virtual Gamepad — skip it
-   - The next one is your built-in Deck controls or your Bluetooth controller
-7. Click **Detect** on each one until you see events appear
-   - If events show up immediately without touching anything, that's the Deck's built-in controls
-   - If you have to press a button on your controller for events to appear, that's your Bluetooth controller
-8. Click **Start Merge** on the one you want
-9. Go back to your game — both pedaling and your controller now work together
+### Important: Controller Order in Steam
+
+Tour de France (and many games) only accepts input from **Controller 1**. You need to reorder the controllers in Steam so that **Trainer Virtual Gamepad** is first.
+
+1. Open Steam → right-click Tour de France → **Properties** → **Controller**
+2. Click **Reorder Controllers**
+3. Make sure **Trainer Virtual Gamepad** is at the top of the list
+4. Launch the game
+
+### Merge the Built-In Deck Controller
+
+Once the game is running:
+
+1. **Keep the game running** — Steam Input only activates virtual Xbox pads when a game is consuming them
+2. **Switch to the web browser** (don't close the game)
+3. Open the dashboard's **Merge** tab
+4. Click **Scan**
+5. You'll see "Microsoft X-Box 360 pad" devices
+   - **Index 0** is the Trainer Virtual Gamepad itself — **do not merge this**
+   - **Index 1** is your built-in Steam Deck controls
+   - If you have extra Bluetooth controllers paired, they'll be further down
+6. Click **Detect** on index 1 — events should appear **immediately without touching anything** — that's the Deck's built-in controls already being driven by Steam Input
+7. Click **Start Merge**
+8. Go back to your game — the Trainer mappings and your physical Deck controls now both work on **Trainer Virtual Gamepad**
 
 ---
 

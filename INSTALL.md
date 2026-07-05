@@ -167,28 +167,36 @@ You should see `UUID: Cycling Power (00001818-...)` in the output.
 
 ## 7. Add a Bluetooth Controller (Optional)
 
-### Pair It First
+### Important: Set Trainer Virtual Gamepad as Controller 1
 
-1. On the Steam Deck, go to **Settings → Bluetooth**
-2. Put your controller in pairing mode
-3. Select it in the list
+Most games (including Tour de France) only accept input from **Controller 1**. If the Trainer Virtual Gamepad isn't first, the game won't see it.
 
-### Merge It With the Trainer
+1. Open Steam → right-click your game → **Properties** → **Controller**
+2. Click **Reorder Controllers**
+3. Drag **Trainer Virtual Gamepad** to the top of the list
+4. Launch the game
 
-1. Start **Tour de France** (or your game) on Steam
-2. In the game's controller settings, select **Trainer Virtual Gamepad**
-3. **Switch to the browser** (keep the game running)
-4. Open the **Merge** tab in the dashboard
-5. Click **Scan**
-6. You'll see devices named "Microsoft X-Box 360 pad N"
-   - **Skip index 0** — that's the Trainer Virtual Gamepad itself
-   - Try index 1 — that's usually the Steam Deck's built-in controls
-   - If you have a Bluetooth controller, it may be index 2 or higher
-7. Click **Detect** on a device
-   - Events appear immediately without touching anything → built-in Deck controls
-   - Events appear when you press a button on your controller → that's your Bluetooth controller
-8. Click **Start Merge** on the correct device
-9. Go back to your game — both the trainer and your controller work together
+### Merge the Built-In Deck Controller
+
+Once the game is running:
+
+1. **Keep the game running** — Steam Input only creates virtual Xbox pads when a game is actively using them
+2. **Switch to the web browser** (don't close the game)
+3. Open the **Merge** tab in the dashboard
+4. Click **Scan**
+5. You'll see "Microsoft X-Box 360 pad N" devices
+   - **Index 0** is the Trainer Virtual Gamepad — **do not merge this**
+   - **Index 1** is your built-in Steam Deck controls — events show up immediately on Detect without touching anything
+6. Click **Detect** on index 1 to confirm — events appear right away
+7. Click **Start Merge**
+8. Go back to your game — both pedaling and your Deck controls now work on **Trainer Virtual Gamepad**
+
+### Merge a Bluetooth Controller (Instead of Built-In)
+
+1. First, pair your controller via **Settings → Bluetooth**
+2. Follow the steps above — your controller will appear at a higher index (2 or 3)
+3. Click **Detect** on it, then press a button — events should appear
+4. Click **Start Merge**
 
 ---
 

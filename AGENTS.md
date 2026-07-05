@@ -333,4 +333,12 @@ If streaming fails with "Device with address F0:C5:70:96:A9:3B was not found", t
 - Always use a single uvicorn worker (`--workers` defaults to 1) — multiple workers create stale duplicate uinput devices
 - Chart.js loaded from CDN (not bundled) — requires internet
 - Passthrough.py (Steam Deck controller passthrough) is deprecated.
-- Built-in Steam Deck controller IS mergeable: when the game is loaded with **Trainer Virtual Gamepad** as Controller 1, Steam Input creates a "Microsoft X-Box 360 pad N" virtual device driven by the Deck's physical controls. Scan in the Merge tab, find the pad that shows events immediately on Detect (without touching anything), and merge it. The first pad (index 0) is usually the Trainer Virtual Gamepad itself — skip it and merge the next one.
+- Built-in Steam Deck controller IS mergeable with this exact workflow:
+  1. In Steam, reorder controllers for the game so **Trainer Virtual Gamepad** is Controller 1 (right-click game → Properties → Controller → Reorder Controllers)
+  2. Launch the game — Steam Input creates virtual Xbox pads only when a game consumes them
+  3. Keep the game running, switch to browser, open Merge tab
+  4. Scan — the first pad (index 0) is Trainer Virtual Gamepad itself — **do not merge this**
+  5. Click **Detect** on index 1 — events appear immediately without touching anything (Steam Input is already driving it)
+  6. Click **Start Merge**
+  7. The built-in Deck controls now feed into Trainer Virtual Gamepad alongside the trainer mappings
+- Tour de France (and most games) only reads **Controller 1** — if Trainer Virtual Gamepad isn't first in the Steam controller order, the game won't see it
