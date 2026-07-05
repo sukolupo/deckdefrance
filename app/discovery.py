@@ -12,25 +12,25 @@ def _get_device_rssi(device: Any) -> int | None:
     return None
 
 
-async def discover_tacx_trainers(timeout: int = 5) -> List[Dict[str, Any]]:
+async def discover_trainers(timeout: int = 5) -> List[Dict[str, Any]]:
     """
-    Scan for Tacx trainers using Bluetooth Low Energy (BLE).
+    Scan for trainers using Bluetooth Low Energy (BLE).
     
     Args:
         timeout: Scan duration in seconds (default: 5)
     
     Returns:
-        List of discovered Tacx trainers with their MAC addresses and names
+        List of discovered trainers with their MAC addresses and names
     """
     devices = []
     
     try:
         discovered = await BleakScanner.discover(timeout=timeout)
 
-        # Filter for Tacx devices
+        # Filter for trainer devices
         for device in discovered:
             device_name = device.name or "Unknown"
-            if "tacx" in device_name.lower() or "trainer" in device_name.lower():
+            if "trainer" in device_name.lower():
                 devices.append({
                     "mac_address": device.address,
                     "name": device_name,
@@ -47,7 +47,7 @@ async def discover_tacx_trainers(timeout: int = 5) -> List[Dict[str, Any]]:
 
 async def discover_all_devices(timeout: int = 5) -> List[Dict[str, Any]]:
     """
-    Scan for all Bluetooth devices (not just Tacx).
+    Scan for all Bluetooth devices.
     
     Args:
         timeout: Scan duration in seconds (default: 5)

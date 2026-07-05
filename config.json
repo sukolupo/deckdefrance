@@ -1,5 +1,5 @@
 {
-  "tacx_mac_address": "F0:C5:70:96:A9:3B",
+  "trainer_mac_address": "XX:XX:XX:XX:XX:XX",
   "max_target_watts": 150.0,
   "cadence_threshold": 80.0,
   "power_threshold_race": 90.0,

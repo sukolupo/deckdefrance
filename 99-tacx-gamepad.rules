@@ -1,6 +1,0 @@
-# Tacx Virtual Gamepad - ensure Steam sees it as a controller
-# Allows any user to write to the virtual gamepad and read BT controller events
-KERNEL=="js*", ATTRS{name}=="Tacx Virtual Gamepad", MODE="0666", TAG+="uaccess", TAG+="seat"
-KERNEL=="event*", ATTRS{name}=="Tacx Virtual Gamepad", MODE="0666", TAG+="uaccess", TAG+="seat"
-KERNEL=="event*", NAME="input/%k", MODE="0666"
-KERNEL=="uinput", MODE="0666"

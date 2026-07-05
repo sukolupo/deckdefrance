@@ -1,14 +1,14 @@
 # deckdefrance
 
-Tacx turbo trainer → Tour de France controller mapper. Connects to a Tacx smart trainer over BLE, maps power/cadence/resistance to a virtual gamepad (uinput), merges a paired Bluetooth controller into the same device, and serves a web dashboard with a full-screen touch gamepad page.
+Trainer turbo trainer → Tour de France controller mapper. Connects to a Trainer smart trainer over BLE, maps power/cadence/resistance to a virtual gamepad (uinput), merges a paired Bluetooth controller into the same device, and serves a web dashboard with a full-screen touch gamepad page.
 
-The game sees **one** controller ("Tacx Virtual Gamepad") with all inputs: Tacx power→trigger mappings + BT controller joystick/buttons.
+The game sees **one** controller ("Trainer Virtual Gamepad") with all inputs: Trainer power→trigger mappings + BT controller joystick/buttons.
 
 ## Stack
 
 - **Backend**: FastAPI (Python 3.12) via uvicorn, port 8000
 - **BLE**: `bleak` + `pycycling` (Cycling Power Service), auto-reconnects on drop
-- **Virtual gamepad**: `evdev.UInput` — Xbox 360 controller vendor/product IDs (0x045e/0x028e), 8 axes + 11 buttons, shared by both Tacx mapper and external controller merge
+- **Virtual gamepad**: `evdev.UInput` — Xbox 360 controller vendor/product IDs (0x045e/0x028e), 8 axes + 11 buttons, shared by both Trainer mapper and external controller merge
 - **Controller Merge**: `evdev` — reads events from a paired Bluetooth controller and forwards them (with axis range scaling) to the same virtual gamepad, so the game sees one combined controller
 - **Frontend**: Vanilla HTML/CSS/JS + Chart.js (CDN)
 - **Dependencies**: `requirements.txt`, Docker optional
@@ -21,7 +21,7 @@ deckdefrance/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py          # FastAPI app — routes, streaming, global state
-│   ├── mapper.py        # Tacx → controller mapping logic + shared uinput device
+│   ├── mapper.py        # Trainer → controller mapping logic + shared uinput device
 │   ├── config.py        # JSON config read/write + FTP presets
 │   ├── discovery.py     # BLE device discovery via BleakScanner
 │   ├── passthrough.py   # Steam Deck controller evdev passthrough (DEPRECATED — use merge)
@@ -44,10 +44,10 @@ deckdefrance/
 ## User Workflow
 
 1. **Start the server** (see Running)
-2. **Configure** — set the Tacx MAC address in the Config tab (or Discover → Select)
+2. **Configure** — set the Trainer MAC address in the Config tab (or Discover → Select)
 3. **(Optional) Start merge** — pair a Bluetooth controller, go to Merge tab → Scan → Select device → Start Merge
 4. **Start streaming** — Status tab → Start Streaming; trainer connects, power→trigger mapping begins
-5. **Play** — open the Play page (`/play`) or go to the game and select **Tacx Virtual Gamepad** as the controller
+5. **Play** — open the Play page (`/play`) or go to the game and select **Trainer Virtual Gamepad** as the controller
 6. **Pedal** — power drives the right trigger; cadence/power thresholds activate buttons per your mappings
 7. **Steer** — use the BT controller's joystick (via merge) or the on-screen virtual joystick on the Play page
 
@@ -64,7 +64,7 @@ deckdefrance/
 | POST | `/api/dpad` | Set D-pad axes (`{ x, y }` in -1/0/1) |
 | POST | `/api/button` | Press/release a virtual button `{ button, pressed }` |
 | POST | `/api/test-trainer` | Test BLE connection to configured MAC |
-| POST | `/api/discover-tacx` | BLE scan for Tacx trainers (5s timeout) |
+| POST | `/api/discover-trainer` | BLE scan for trainers (5s timeout) |
 | POST | `/api/discover-all` | BLE scan for all devices |
 | POST | `/api/start-streaming` | Start BLE streaming background task (returns immediately; poll status for result) |
 | POST | `/api/stop-streaming` | Cancel streaming task |
@@ -88,7 +88,7 @@ deckdefrance/
 ## Streaming Data Flow
 
 ```
-Tacx Trainer (BLE)
+Trainer (BLE)
   → BleakClient (async, auto-reconnects on drop, up to 10 retries)
   → pycycling CyclingPowerService (notification handler)
   → power_handler(data) callback:
@@ -119,7 +119,7 @@ Tacx Trainer (BLE)
 
 ```json
 {
-  "tacx_mac_address": "F0:C5:70:96:A9:3B",
+  "trainer_mac_address": "XX:XX:XX:XX:XX:XX",
   "max_target_watts": 250,
   "cadence_threshold": 90,
   "power_threshold_race": 120,
@@ -200,7 +200,7 @@ The **Steer** tab and the **Play** page both provide a draggable virtual joystic
 docker compose up --build
 ```
 
-The app runs on the Steam Deck. The configured Tacx MAC is `F0:C5:70:96:A9:3B`.
+The app runs on the Steam Deck. The configured Trainer MAC is `XX:XX:XX:XX:XX:XX`.
 
 ### Connection Approach
 
@@ -236,14 +236,14 @@ await client.connect()
 - The outer exception handler catches it and triggers reconnection
 
 **Do NOT add idle data timeouts:**
-- The Tacx sends notifications even at 0W when idle
+- The Trainer sends notifications even at 0W when idle
 - If the user stops pedaling, data may pause — a timeout would needlessly disconnect
 - The existing pattern (just `await asyncio.sleep(0.5)` in the streaming loop) is correct
 - Connection stays alive as long as the BLE link is up, regardless of data
 
-## Controller Merge (Bluetooth + Tacx)
+## Controller Merge (Bluetooth + Trainer)
 
-Merge a paired Bluetooth controller with the Tacx trainer into one combined virtual gamepad. Both inputs go to the same device — the game sees a single "Tacx Virtual Gamepad".
+Merge a paired Bluetooth controller with the trainer into one combined virtual gamepad. Both inputs go to the same device — the game sees a single "Trainer Virtual Gamepad".
 
 ### Setup
 
@@ -252,9 +252,9 @@ Merge a paired Bluetooth controller with the Tacx trainer into one combined virt
 3. Click **Scan** to list available gamepad devices
 4. Select your controller from the list (may appear as "Microsoft X-Box 360 pad N" — these are Steam virtual wrappers; try each one)
 5. Click **Start Merge**
-6. In the game, select **Tacx Virtual Gamepad** as the controller
+6. In the game, select **Trainer Virtual Gamepad** as the controller
 
-Both the Tacx trainer mappings and your Bluetooth controller inputs now feed into one virtual gamepad.
+Both the trainer mappings and your Bluetooth controller inputs now feed into one virtual gamepad.
 
 ### What Gets Forwarded
 
@@ -265,7 +265,7 @@ Both the Tacx trainer mappings and your Bluetooth controller inputs now feed int
 | D-pad (ABS_HAT0X/Y) | ✅ Scaled | Source -1/1 → target -1/1 |
 | Face buttons (A/B/X/Y) | ✅ Raw | EV_KEY events forwarded as-is |
 | Bumpers/thumb clicks | ✅ Raw | EV_KEY events forwarded as-is |
-| Triggers (ABS_Z/RZ) | ❌ Skipped | Reserved for Tacx power→trigger mapping (merge would overwrite with idle 0) |
+| Triggers (ABS_Z/RZ) | ❌ Skipped | Reserved for Trainer power→trigger mapping (merge would overwrite with idle 0) |
 
 ### How It Works
 
@@ -274,10 +274,10 @@ Bluetooth Controller (evdev)
   → merge._run_merge() (async evdev reader)
     → reads axis & button events
     → scales axis values from source range (e.g. -32767..32767) to our device range (0..65535)
-    → skips trigger axes (Tacx-owned)
+    → skips trigger axes (Trainer-owned)
     → writes to our shared UInput device
-  → Combined with Tacx trainer power mappings on the same device
-  → Game sees one controller (Tacx Virtual Gamepad) with ALL inputs
+  → Combined with trainer power mappings on the same device
+  → Game sees one controller (Trainer Virtual Gamepad) with ALL inputs
 ```
 
 ### API Endpoints
@@ -294,7 +294,7 @@ Bluetooth Controller (evdev)
 - The Steam virtual Xbox pads (`0x28de:0x11ff`) are created by Steam Input and may wrap your Bluetooth controller. Try each one if you don't see your controller's real name.
 - Axis values are dynamically scaled from the source device's absinfo ranges to match our device's declared ranges.
 - Merge and trainer streaming operate independently — use both at the same time or separately.
-- Merge does not forward ABS_RZ (right trigger) — reserved for Tacx power mapping. ABS_Z (left trigger) is now forwarded from the controller.
+- Merge does not forward ABS_RZ (right trigger) — reserved for Trainer power mapping. ABS_Z (left trigger) is now forwarded from the controller.
 - If you change the source BT controller, stop merge, scan again, and start on the new device path.
 
 ## Known Issues / Notes
@@ -305,23 +305,23 @@ The app **auto-caches** services on `POST /api/start-streaming` — if `bluetoot
 
 If the auto-cache fails or you need to do it manually:
 
-1. **Wake the Tacx** — pedal or power-cycle the trainer so it advertises
+1. **Wake the Trainer** — pedal or power-cycle the trainer so it advertises
 2. **Scan** via the app: `POST /api/discover-all` (or click Discover in UI)
 3. **Cache services via bluetoothctl**:
    ```bash
-   timeout 30 bluetoothctl -- connect F0:C5:70:96:A9:3B
+   timeout 30 bluetoothctl -- connect XX:XX:XX:XX:XX:XX
    ```
    Use `bluetoothctl -- connect <mac>` (double-dash) not `bluetoothctl connect <mac>`. The `--` runs it as a non-interactive command with proper service discovery. Retry a few times if `le-connection-abort-by-local` — it usually succeeds within 3 attempts.
-4. **Trust it**: `bluetoothctl trust F0:C5:70:96:A9:3B`
-5. **Disconnect**: `bluetoothctl disconnect F0:C5:70:96:A9:3B`
-6. **Verify**: `bluetoothctl info F0:C5:70:96:A9:3B` should show `UUID: Cycling Power (00001818-...)`
+4. **Trust it**: `bluetoothctl trust XX:XX:XX:XX:XX:XX`
+5. **Disconnect**: `bluetoothctl disconnect XX:XX:XX:XX:XX:XX`
+6. **Verify**: `bluetoothctl info XX:XX:XX:XX:XX:XX` should show `UUID: Cycling Power (00001818-...)`
 7. **Start streaming** from the UI — `async with BleakClient` uses the cached services
 
 **Do NOT run `bluetoothctl remove`** — it destroys the service cache and the `async with BleakClient` approach requires the device to be in BlueZ's cache with resolved services.
 
 ### BLE Troubleshooting
 
-If streaming fails with "Device with address F0:C5:70:96:A9:3B was not found", the device isn't cached in BlueZ. Run the BLE Connection Setup steps above.
+If streaming fails with "Device with address XX:XX:XX:XX:XX:XX was not found", the device isn't cached in BlueZ. Run the BLE Connection Setup steps above.
 
 - `start-streaming` returns immediately; poll `/api/stream-status` for the connection result (the UI does this automatically every 2s while connecting)
 - Streaming auto-reconnects on BLE drop (up to 10 retries, 3s delay)
@@ -333,4 +333,12 @@ If streaming fails with "Device with address F0:C5:70:96:A9:3B was not found", t
 - Always use a single uvicorn worker (`--workers` defaults to 1) — multiple workers create stale duplicate uinput devices
 - Chart.js loaded from CDN (not bundled) — requires internet
 - Passthrough.py (Steam Deck controller passthrough) is deprecated.
-- Built-in Steam Deck controller IS mergeable: when the game is loaded with **Tacx Virtual Gamepad** as Controller 1, Steam Input creates a "Microsoft X-Box 360 pad N" virtual device driven by the Deck's physical controls. Scan in the Merge tab, find the pad that shows events immediately on Detect (without touching anything), and merge it. The first pad (index 0) is usually the Tacx Virtual Gamepad itself — skip it and merge the next one.
+- Built-in Steam Deck controller IS mergeable with this exact workflow:
+  1. In Steam, reorder controllers for the game so **Trainer Virtual Gamepad** is Controller 1 (right-click game → Properties → Controller → Reorder Controllers)
+  2. Launch the game — Steam Input creates virtual Xbox pads only when a game consumes them
+  3. Keep the game running, switch to browser, open Merge tab
+  4. Scan — the first pad (index 0) is Trainer Virtual Gamepad itself — **do not merge this**
+  5. Click **Detect** on index 1 — events appear immediately without touching anything (Steam Input is already driving it)
+  6. Click **Start Merge**
+  7. The built-in Deck controls now feed into Trainer Virtual Gamepad alongside the trainer mappings
+- Tour de France (and most games) only reads **Controller 1** — if Trainer Virtual Gamepad isn't first in the Steam controller order, the game won't see it

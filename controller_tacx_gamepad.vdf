@@ -1,7 +1,7 @@
 "controller_mappings"
 {
 	"version"		"3"
-	"game" "Tacx Virtual Gamepad"
+	"game" "Bike Virtual Gamepad"
 	"title" "#Title"
 	"description" "#Description"
 	"controller_type"		"controller_xbox360"
@@ -9,8 +9,8 @@
 	{
 		"english"
 		{
-			"title"		"Tacx Gamepad"
-			"description"		"Template for the Tacx Virtual Gamepad. Maps ABS_RZ (right trigger), ABS_Z (left trigger), left stick, and A/B/X/Y/Select/Start buttons to standard gamepad inputs."
+			"title"		"Bike Trainer Gamepad"
+			"description"		"Template for the Bike Trainer Virtual Gamepad. Maps ABS_RZ (right trigger), ABS_Z (left trigger), left stick, and A/B/X/Y/Select/Start buttons to standard gamepad inputs."
 		}
 	}
 	"group"

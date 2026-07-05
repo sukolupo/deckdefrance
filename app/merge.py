@@ -1,8 +1,8 @@
-"""Merge an external Bluetooth controller with our Tacx virtual gamepad.
+"""Merge an external Bluetooth controller with our trainer virtual gamepad.
 
 Reads events from a source evdev device (e.g. a paired Xbox/PS controller)
-and forwards them to the shared Tacx virtual gamepad device, so the game
-sees one combined controller with both Tacx mappings and external inputs.
+and forwards them to the shared trainer virtual gamepad device, so the game
+sees one combined controller with both trainer mappings and external inputs.
 """
 
 import asyncio
@@ -19,9 +19,9 @@ _TARGET_ABS_RANGES = {
     ecodes.ABS_HAT0Y: (-1, 1),
 }
 
-# Axes the Tacx mapper owns exclusively — merge skips these to avoid overwriting
-# ABS_RZ (right trigger) is used for Tacx power mapping; ABS_Z (left trigger) is free
-_TACX_RESERVED_AXES = {ecodes.ABS_RZ}
+# Axes the trainer mapper owns exclusively — merge skips these to avoid overwriting
+# ABS_RZ (right trigger) is used for trainer power mapping; ABS_Z (left trigger) is free
+_TRAINER_RESERVED_AXES = {ecodes.ABS_RZ}
 
 # Merge state
 _merge_task: asyncio.Task | None = None
@@ -68,7 +68,7 @@ async def _run_merge(source_path: str):
             if event.type == 0:
                 continue
             if event.type == ecodes.EV_ABS:
-                if event.code in _TACX_RESERVED_AXES:
+                if event.code in _TRAINER_RESERVED_AXES:
                     continue
                 tgt_range = _TARGET_ABS_RANGES.get(event.code)
                 src_range = source_abs_ranges.get(event.code)

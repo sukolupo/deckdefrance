@@ -5,7 +5,7 @@ from bleak import BleakClient
 from pycycling.cycling_power_service import CyclingPowerService
 from evdev import UInput, ecodes
 
-TACX_MAC_ADDRESS = "XX:XX:XX:XX:XX:XX"
+TRAINER_MAC_ADDRESS = "XX:XX:XX:XX:XX:XX"
 
 # Button event codes
 _BUTTON_CODES: Dict[str, int] = {
@@ -55,7 +55,7 @@ _CAP = {
 # Create the shared virtual controller device
 device = UInput(
     _CAP,
-    name="Tacx Virtual Gamepad",
+    name="Trainer Virtual Gamepad",
     vendor=0x045e,
     product=0x028e,
 )
@@ -81,8 +81,8 @@ def emit(code: int, value: int):
 _last_button_states: Dict[str, bool] = {}
 
 
-def map_tacx_to_controller(trainer_power: float, cadence: float, resistance: float) -> Dict[str, Any]:
-    """Convert TacX trainer metrics into a Tour de France controller mapping."""
+def map_trainer_to_controller(trainer_power: float, cadence: float, resistance: float) -> Dict[str, Any]:
+    """Convert trainer metrics into a Tour de France controller mapping."""
     cycling_power = trainer_power
     gear = min(10, max(1, int(resistance * 2)))
 
@@ -156,7 +156,7 @@ def apply_mappings(mappings: List[Dict[str, Any]], watts: float, cadence: float,
 
 def power_data_handler(data):
     watts = data.instantaneous_power
-    print(f"Tacx Power: {watts}W")
+    print(f"Trainer Power: {watts}W")
 
     max_target_watts = 300
     trigger_value = int((min(watts, max_target_watts) / max_target_watts) * 255)
@@ -164,8 +164,8 @@ def power_data_handler(data):
 
 
 async def run():
-    async with BleakClient(TACX_MAC_ADDRESS) as client:
-        print("Virtual Gamepad Initialized. Connected to Tacx!")
+    async with BleakClient(TRAINER_MAC_ADDRESS) as client:
+        print("Virtual Gamepad Initialized. Connected to Trainer!")
         trainer = CyclingPowerService(client)
         trainer.set_cycling_power_measurement_handler(power_data_handler)
         await trainer.enable_cycling_power_measurement_notifications()
