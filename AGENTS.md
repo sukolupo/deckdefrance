@@ -119,7 +119,7 @@ Trainer (BLE)
 
 ```json
 {
-  "trainer_mac_address": "F0:C5:70:96:A9:3B",
+  "trainer_mac_address": "XX:XX:XX:XX:XX:XX",
   "max_target_watts": 250,
   "cadence_threshold": 90,
   "power_threshold_race": 120,
@@ -200,7 +200,7 @@ The **Steer** tab and the **Play** page both provide a draggable virtual joystic
 docker compose up --build
 ```
 
-The app runs on the Steam Deck. The configured Trainer MAC is `F0:C5:70:96:A9:3B`.
+The app runs on the Steam Deck. The configured Trainer MAC is `XX:XX:XX:XX:XX:XX`.
 
 ### Connection Approach
 
@@ -309,19 +309,19 @@ If the auto-cache fails or you need to do it manually:
 2. **Scan** via the app: `POST /api/discover-all` (or click Discover in UI)
 3. **Cache services via bluetoothctl**:
    ```bash
-   timeout 30 bluetoothctl -- connect F0:C5:70:96:A9:3B
+   timeout 30 bluetoothctl -- connect XX:XX:XX:XX:XX:XX
    ```
    Use `bluetoothctl -- connect <mac>` (double-dash) not `bluetoothctl connect <mac>`. The `--` runs it as a non-interactive command with proper service discovery. Retry a few times if `le-connection-abort-by-local` — it usually succeeds within 3 attempts.
-4. **Trust it**: `bluetoothctl trust F0:C5:70:96:A9:3B`
-5. **Disconnect**: `bluetoothctl disconnect F0:C5:70:96:A9:3B`
-6. **Verify**: `bluetoothctl info F0:C5:70:96:A9:3B` should show `UUID: Cycling Power (00001818-...)`
+4. **Trust it**: `bluetoothctl trust XX:XX:XX:XX:XX:XX`
+5. **Disconnect**: `bluetoothctl disconnect XX:XX:XX:XX:XX:XX`
+6. **Verify**: `bluetoothctl info XX:XX:XX:XX:XX:XX` should show `UUID: Cycling Power (00001818-...)`
 7. **Start streaming** from the UI — `async with BleakClient` uses the cached services
 
 **Do NOT run `bluetoothctl remove`** — it destroys the service cache and the `async with BleakClient` approach requires the device to be in BlueZ's cache with resolved services.
 
 ### BLE Troubleshooting
 
-If streaming fails with "Device with address F0:C5:70:96:A9:3B was not found", the device isn't cached in BlueZ. Run the BLE Connection Setup steps above.
+If streaming fails with "Device with address XX:XX:XX:XX:XX:XX was not found", the device isn't cached in BlueZ. Run the BLE Connection Setup steps above.
 
 - `start-streaming` returns immediately; poll `/api/stream-status` for the connection result (the UI does this automatically every 2s while connecting)
 - Streaming auto-reconnects on BLE drop (up to 10 retries, 3s delay)

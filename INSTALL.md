@@ -124,7 +124,7 @@ The server is now running in the background. You can close the terminal.
 3. Wait 5 seconds
 4. Your trainer should appear in the list — click **Select**
 
-The MAC address (a code like `F0:C5:70:96:A9:3B`) is now saved.
+The MAC address (a code like `XX:XX:XX:XX:XX:XX`) is now saved.
 
 ### Step B — Cache Bluetooth Services
 
@@ -134,7 +134,7 @@ When you click **Start Streaming**, the app will try to cache the trainer's Blue
 2. Open a terminal and run (replace MAC with your trainer's address):
 
 ```bash
-timeout 30 bluetoothctl -- connect F0:C5:70:96:A9:3B
+timeout 30 bluetoothctl -- connect XX:XX:XX:XX:XX:XX
 ```
 
 Wait up to 30 seconds. You might see `le-connection-abort-by-local` — that's normal. Just run the command again up to 3 times until it connects.
@@ -142,14 +142,14 @@ Wait up to 30 seconds. You might see `le-connection-abort-by-local` — that's n
 3. Once it connects, run:
 
 ```bash
-bluetoothctl trust F0:C5:70:96:A9:3B
-bluetoothctl disconnect F0:C5:70:96:A9:3B
+bluetoothctl trust XX:XX:XX:XX:XX:XX
+bluetoothctl disconnect XX:XX:XX:XX:XX:XX
 ```
 
 4. Check that it worked:
 
 ```bash
-bluetoothctl info F0:C5:70:96:A9:3B
+bluetoothctl info XX:XX:XX:XX:XX:XX
 ```
 
 You should see `UUID: Cycling Power (00001818-...)` in the output.
