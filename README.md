@@ -143,6 +143,23 @@ Want to steer with a physical controller too? Here's how:
 | **Test** | Preview how your settings will work without needing the trainer |
 | **Merge** | Add a Bluetooth controller to work alongside the trainer |
 
+## Screenshots
+
+<p align="center">
+  <img src="app/screenshots/status-tab.png" width="700" alt="Status tab with live chart">
+  <br><em>Status tab — live power, cadence, and chart</em>
+</p>
+
+<p align="center">
+  <img src="app/screenshots/merge-tab.png" width="700" alt="Merge tab scanning for controllers">
+  <br><em>Merge tab — add a Bluetooth controller - (note: run when in game mode to detect the inbuilt steam deck controller)</em>
+</p>
+
+<p align="center">
+  <img src="app/screenshots/controller-page.png" width="350" alt="Full-screen Virtual touch gamepad">
+  <br><em>Play page — full-screen touch gamepad</em>
+</p>
+
 ---
 
 ## Tips
