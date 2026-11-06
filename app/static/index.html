@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deckdefrance - Bike Trainer Control</title>
-    <link rel="stylesheet" href="/static/style.css?v=35">
+    <link rel="stylesheet" href="/static/style.css?v=36">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -37,6 +37,7 @@
                 <a class="sidebar-item" data-tab="discover">Discover</a>
                 <a class="sidebar-item" data-tab="test">Test</a>
                 <a class="sidebar-item" data-tab="merge">Merge</a>
+                <a class="sidebar-item" data-tab="obc">OpenBikeControl</a>
                 <a class="sidebar-item sidebar-fullscreen" href="/play">&#x25B6; Full Screen</a>
             </div>
         </div>
@@ -495,8 +496,47 @@
                 </p>
             </div>
         </div>
+
+        <!-- OpenBikeControl Tab -->
+        <div id="obc" class="tab-content">
+            <h2>OpenBikeControl</h2>
+            <p style="color:#888;margin-bottom:15px;">
+                Use a handlebar controller that supports <a href="https://openbikecontrol.org" target="_blank" rel="noopener">OpenBikeControl</a>
+                as buttons on your Trainer virtual gamepad, over Bluetooth or your network.
+            </p>
+
+            <div class="test-section">
+                <h3>Scan for Controllers</h3>
+                <button class="btn btn-primary" onclick="scanObcDevices()">Scan</button>
+                <div id="obc-devices-list" class="result-box" style="margin-top:10px;">
+                    <p style="color:#888;">Click Scan to find OpenBikeControl devices over Bluetooth and on your network.</p>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>Connection Status</h3>
+                <div class="test-result" id="obc-status">
+                    <span class="status-badge idle">Disconnected</span>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn btn-success" id="obc-connect-btn" onclick="connectObc()">Connect</button>
+                    <button class="btn btn-danger" id="obc-disconnect-btn" onclick="disconnectObc()" disabled>Disconnect</button>
+                    <button class="btn btn-secondary" id="obc-save-btn" onclick="saveAutoObc()">Save as Auto-Connect</button>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>Button Mapping</h3>
+                <p style="color:#888;font-size:0.85em;line-height:1.6;">
+                    Shift Up / Down &rarr; RB / LB &bull; Up / Down / Left / Right &rarr; D-pad &bull;
+                    Select &rarr; A &bull; Back &rarr; B &bull; Menu &rarr; Start &bull; Camera View &rarr; R3 &bull;
+                    Steering &rarr; left stick &bull; Brake &rarr; LT.<br>
+                    Change it with <code>obc_mappings</code> in <code>config.json</code>.
+                </p>
+            </div>
+        </div>
     </div>
 
-    <script src="/static/app.js?v=35"></script>
+    <script src="/static/app.js?v=36"></script>
 </body>
 </html>

@@ -1250,6 +1250,121 @@ async function saveAutoMerge() {
     }
 }
 
+// OpenBikeControl Tab — handlebar controllers over BLE or mDNS/TCP
+let _obcDevice = null;
+
+async function scanObcDevices() {
+    const listEl = document.getElementById('obc-devices-list');
+    listEl.innerHTML = '<p style="color:#888;">Scanning... (this may take up to 8 seconds)</p>';
+    try {
+        const res = await fetch('/api/obc/discover', { method: 'POST' });
+        const data = await res.json();
+        if (data.error) {
+            listEl.innerHTML = `<p style="color:#f56565;">Error: ${data.error}</p>`;
+            return;
+        }
+        if (!data.devices || data.devices.length === 0) {
+            listEl.innerHTML = '<p style="color:#888;">No OpenBikeControl devices found. Make sure the controller is on and advertising.</p>';
+            return;
+        }
+        let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+        data.devices.forEach((dev, i) => {
+            const selected = _obcDevice && _obcDevice.address === dev.address ? 'checked' : '';
+            const transport = dev.transport === 'tcp' ? 'Network' : 'Bluetooth';
+            const signal = dev.rssi !== null && dev.rssi !== undefined ? ` | Signal: ${dev.rssi} dBm` : '';
+            html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#1e1e2e;border-radius:6px;border:1px solid #333;">';
+            html += `<input type="radio" name="obc-device" ${selected} onchange='_obcDevice=${JSON.stringify({ transport: dev.transport, address: dev.address })}' style="flex-shrink:0;">`;
+            html += `<div style="flex:1;min-width:0;">`;
+            html += `<div style="font-weight:600;">${dev.name}</div>`;
+            html += `<div style="color:#888;font-size:0.7em;word-break:break-all;margin-top:2px;">${transport} | ${dev.address}${signal}</div>`;
+            html += `</div>`;
+            html += '</div>';
+        });
+        html += '</div>';
+        listEl.innerHTML = html;
+    } catch (e) {
+        listEl.innerHTML = `<p style="color:#f56565;">Error: ${e.message}</p>`;
+    }
+}
+
+async function refreshObcStatus() {
+    try {
+        const res = await fetch('/api/obc/status');
+        const data = await res.json();
+        const statusEl = document.getElementById('obc-status');
+        const connectBtn = document.getElementById('obc-connect-btn');
+        const disconnectBtn = document.getElementById('obc-disconnect-btn');
+        if (!statusEl) return;
+
+        if (data.connected) {
+            statusEl.innerHTML = `<span class="status-badge connected">Connected</span> &mdash; ${data.address}`;
+        } else if (data.active) {
+            statusEl.innerHTML = `<span class="status-badge idle">Connecting</span> &mdash; ${data.message || data.address}`;
+        } else {
+            statusEl.innerHTML = `<span class="status-badge idle">Disconnected</span>${data.message ? ' &mdash; ' + data.message : ''}`;
+        }
+        connectBtn.disabled = data.active;
+        disconnectBtn.disabled = !data.active;
+    } catch (e) {
+        console.error('Error refreshing OpenBikeControl status:', e);
+    }
+}
+
+async function connectObc() {
+    const connectBtn = document.getElementById('obc-connect-btn');
+    connectBtn.disabled = true;
+    try {
+        const params = _obcDevice
+            ? `?transport=${encodeURIComponent(_obcDevice.transport)}&address=${encodeURIComponent(_obcDevice.address)}`
+            : '';
+        const res = await fetch('/api/obc/start' + params, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'started' || data.status === 'already_active') {
+            refreshObcStatus();
+        } else {
+            alert(data.message || 'Failed to connect');
+            connectBtn.disabled = false;
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+        connectBtn.disabled = false;
+    }
+}
+
+async function disconnectObc() {
+    const disconnectBtn = document.getElementById('obc-disconnect-btn');
+    disconnectBtn.disabled = true;
+    try {
+        await fetch('/api/obc/stop', { method: 'POST' });
+        refreshObcStatus();
+    } catch (e) {
+        alert('Error: ' + e.message);
+        disconnectBtn.disabled = false;
+    }
+}
+
+async function saveAutoObc() {
+    if (!_obcDevice) {
+        alert('Select a controller from the scan list first.');
+        return;
+    }
+    try {
+        const res = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ obc_transport: _obcDevice.transport, obc_address: _obcDevice.address, obc_auto_connect: true }),
+        });
+        const data = await res.json();
+        if (data.obc_address) {
+            alert(`Auto-connect saved: ${_obcDevice.address}\nRestart server to apply.`);
+        } else {
+            alert('Failed to save auto-connect config');
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
 // Commands Tab — TDF Official Controls
 const COMMANDS = [
     { section: "Normal Race", items: [
@@ -1419,6 +1534,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
     try { refreshPassthroughStatus(); } catch (e) {}
     try { setInterval(refreshPassthroughStatus, 3000); } catch (e) {}
+    try { refreshObcStatus(); } catch (e) {}
+    try { setInterval(refreshObcStatus, 3000); } catch (e) {}
 });
 
 // Register service worker for PWA support

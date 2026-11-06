@@ -12,9 +12,10 @@ from bleak import BleakClient
 from pycycling.cycling_power_service import CyclingPowerService
 from evdev import ecodes
 from .mapper import map_trainer_to_controller, apply_mappings, device, emit, _BUTTON_CODES
-from .config import get_config, update_config, FTP_PRESETS
-from .discovery import discover_trainers, discover_all_devices
+from .config import get_config, update_config, FTP_PRESETS, DEFAULT_CONFIG
+from .discovery import discover_trainers, discover_all_devices, discover_obc_devices
 from .merge import start_merge, stop_merge, get_merge_status, probe_device
+from .obc import start_obc, stop_obc, get_obc_status
 from .passthrough import (
     start_passthrough,
     stop_passthrough,
@@ -71,6 +72,10 @@ class ConfigRequest(BaseModel):
     gear_multiplier: float | None = None
     auto_merge_device: str | None = None
     mappings: list[dict] | None = None
+    obc_transport: str | None = None
+    obc_address: str | None = None
+    obc_auto_connect: bool | None = None
+    obc_mappings: list[dict] | None = None
 
 
 @app.get("/api/config/presets")
@@ -88,6 +93,7 @@ async def health():
         "status": "ok",
         "streaming": streaming_active,
         "merge_active": merge.get("active", False),
+        "obc_connected": get_obc_status().get("connected", False),
         "auto_merge_device": cfg.get("auto_merge_device", ""),
         "trainer_configured": cfg.get("trainer_mac_address", "XX:XX:XX:XX:XX:XX") != "XX:XX:XX:XX:XX:XX",
     }
@@ -228,6 +234,53 @@ async def merge_probe(source_path: str):
 async def merge_stop():
     """Stop the merge."""
     return await stop_merge()
+
+
+@app.post("/api/obc/discover")
+async def obc_discover():
+    """Discover OpenBikeControl devices via BLE and mDNS."""
+    try:
+        devices = await discover_obc_devices(timeout=5)
+        return {
+            "found": len(devices),
+            "devices": devices,
+        }
+    except RuntimeError as e:
+        return {
+            "found": 0,
+            "devices": [],
+            "error": str(e),
+        }
+
+
+@app.get("/api/obc/status")
+async def obc_status():
+    """Get current OpenBikeControl connection status."""
+    return get_obc_status()
+
+
+@app.post("/api/obc/start")
+async def obc_start(transport: str | None = None, address: str | None = None):
+    """Connect to an OpenBikeControl device (defaults to the configured one)."""
+    cfg = get_config()
+    transport = transport or cfg.get("obc_transport", "")
+    address = address or cfg.get("obc_address", "")
+    if transport not in ("ble", "tcp") or not address:
+        return {"status": "error", "message": "No OpenBikeControl device selected"}
+
+    if transport == "ble" and not await _services_cached(address):
+        print(f"Services not cached for {address}, caching now...")
+        if not await _cache_services(address):
+            return {"status": "error", "message": "Could not cache BLE services — ensure the controller is on and advertising"}
+
+    mappings = cfg.get("obc_mappings", DEFAULT_CONFIG["obc_mappings"])
+    return await start_obc(transport, address, mappings, app.version)
+
+
+@app.post("/api/obc/stop")
+async def obc_stop():
+    """Disconnect the OpenBikeControl device."""
+    return await stop_obc()
 
 
 @app.post("/api/test-trainer")
@@ -527,6 +580,9 @@ async def startup_auto_merge():
     if device_path:
         print(f"Auto-starting merge on {device_path}")
         asyncio.create_task(auto_start_merge(device_path))
+    if cfg.get("obc_auto_connect") and cfg.get("obc_address"):
+        print(f"Auto-connecting OpenBikeControl device {cfg.get('obc_address')}")
+        asyncio.create_task(obc_start())
 
 
 async def auto_start_merge(device_path: str):

@@ -26,8 +26,9 @@ deckdefrance/
 │   ├── discovery.py     # BLE device discovery via BleakScanner
 │   ├── passthrough.py   # Steam Deck controller evdev passthrough (DEPRECATED — use merge)
 │   ├── merge.py         # External Bluetooth controller merge into shared uinput device
+│   ├── obc.py           # OpenBikeControl controller input (BLE + mDNS/TCP) into shared uinput device
 │   └── static/
-│       ├── index.html   # Web UI (Status, Control, Discover, Steer, Config, Test, Merge tabs)
+│       ├── index.html   # Web UI (Status, Control, Discover, Steer, Config, Test, Merge, OpenBikeControl tabs)
 │       ├── play.html    # Full-screen touch gamepad page (PWA start page)
 │       ├── app.js       # Frontend logic — polling, chart, config, mappings, virtual joystick, merge, commands
 │       ├── style.css    # Purple gradient theme
@@ -36,6 +37,8 @@ deckdefrance/
 │       └── sw.js        # Service worker (caches static assets)
 ├── start.sh             # Production start (single worker, kills old instance)
 ├── config.json          # Persistent config (MAC, FTP, mappings)
+├── tests/
+│   └── test_obc.py      # OpenBikeControl mapping tests (stub evdev — run anywhere)
 ├── requirements.txt
 ├── Dockerfile
 └── docker-compose.yml
@@ -76,6 +79,10 @@ deckdefrance/
 | POST | `/api/merge/probe` | Watch a device for 3s and return any events detected (identify which controller is which) |
 | POST | `/api/merge/start` | Start merge from `source_path` query param |
 | POST | `/api/merge/stop` | Stop merge |
+| POST | `/api/obc/discover` | Scan BLE + mDNS for OpenBikeControl devices (5s) |
+| GET | `/api/obc/status` | `{ active, connected, message, transport, address }` |
+| POST | `/api/obc/start` | Connect `?transport=ble` or `tcp`, `&address=...` (defaults to config) |
+| POST | `/api/obc/stop` | Disconnect the OpenBikeControl device |
 | GET | `/play` | Full-screen touch gamepad page |
 
 ## PWA
@@ -296,6 +303,35 @@ Bluetooth Controller (evdev)
 - Merge and trainer streaming operate independently — use both at the same time or separately.
 - Merge does not forward ABS_RZ (right trigger) — reserved for Trainer power mapping. ABS_Z (left trigger) is now forwarded from the controller.
 - If you change the source BT controller, stop merge, scan again, and start on the new device path.
+
+## OpenBikeControl Controllers
+
+[OpenBikeControl](https://github.com/OpenBikeControl/openbikecontrol-protocol) (OBC) is an open protocol for handlebar controllers. `obc.py` connects to one OBC device and writes its buttons to the shared virtual gamepad, alongside trainer mappings and merge.
+
+- **Discovery** is deterministic: BLE devices advertising service UUID `d273f680-d548-419d-b9d1-fa0472345229`, and network devices advertising `_openbikecontrol._tcp.local.` (zeroconf)
+- **BLE** uses the same `async with BleakClient(address, timeout=20.0)` pattern and BlueZ service cache check as the trainer; subscribes to Button State (`d273f681-...`)
+- **TCP** connects to `<ip>:<port>` from the mDNS record
+- After connecting, the app sends the **App Information** message (`app id "deckdefrance"`, app version, mapped button IDs) — over BLE to `d273f683-...`, over TCP on the socket
+- Auto-reconnects (up to 10 retries, 3s delay); all held buttons are released on disconnect
+- One physical press can carry several OBC IDs in one message (e.g. Shift Up + Increase Difficulty + Select). IDs newly pressed in the same message count as one press and only the highest priority one fires: **shift > difficulty > navigation/steering > other > select/back**
+- `steering_angle` (proportional, ±`max_angle` degrees = full stick) and `brake` (0–100% → trigger) are analog and applied on every update. Steer Left/Right presses are ignored while a steering angle is available
+
+### Config (`config.json`)
+
+| Field | Description |
+|-------|-------------|
+| `obc_transport` | `"ble"` or `"tcp"` |
+| `obc_address` | BLE MAC address, or `ip:port` for TCP |
+| `obc_auto_connect` | Connect on server start |
+| `obc_mappings` | Same format as `mappings`: `source` is an OBC button (`shift_up`, `shift_down`, `nav_up`, `nav_down`, `nav_left`, `nav_right`, `select`, `back`, `menu`, `home`, `steer_left`, `steer_right`, `steering_angle`, `brake`, `emote`, `increase_difficulty`, `decrease_difficulty`, `camera_view`, `power_up_1..3`); `target` is any button, axis, or `dpad_up/down/left/right` |
+
+Defaults (used when `obc_mappings` is missing) are in `config.py` → `DEFAULT_CONFIG`.
+
+### Tests
+
+```bash
+.venv/bin/python -m unittest discover tests
+```
 
 ## Known Issues / Notes
 
