@@ -29,6 +29,7 @@ from app.config import DEFAULT_CONFIG  # noqa: E402
 from app.obc import (  # noqa: E402
     ObcButtonMapper,
     encode_app_info,
+    is_valid_obc_address,
     parse_button_state,
     split_tcp_messages,
     supported_button_ids,
@@ -165,6 +166,30 @@ class TestProtocol(unittest.TestCase):
         ids = supported_button_ids(DEFAULT_CONFIG["obc_mappings"])
         self.assertEqual(ids, [0x01, 0x02, 0x30, 0x31, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
                                0x16, 0x40, 0x18, 0x19, 0x1B, 0x1A])
+
+
+class TestAddressValidation(unittest.TestCase):
+    def test_valid_addresses(self):
+        self.assertTrue(is_valid_obc_address("ble", "AA:BB:CC:DD:EE:FF"))
+        self.assertTrue(is_valid_obc_address("ble", "aa:bb:cc:dd:ee:0f"))
+        self.assertTrue(is_valid_obc_address("tcp", "192.168.1.20:8080"))
+        self.assertTrue(is_valid_obc_address("tcp", "127.0.0.1:1"))
+        self.assertTrue(is_valid_obc_address("tcp", "10.0.0.5:65535"))
+
+    def test_invalid_ble(self):
+        for address in ["", "AA:BB:CC:DD:EE", "AA:BB:CC:DD:EE:FF:00", "AA-BB-CC-DD-EE-FF",
+                        "GG:BB:CC:DD:EE:FF", "192.168.1.20:8080", "AA:BB:CC:DD:EE:FF\n"]:
+            self.assertFalse(is_valid_obc_address("ble", address), address)
+
+    def test_invalid_tcp(self):
+        for address in ["", "192.168.1.20", "192.168.1.20:", "192.168.1.20:0", "192.168.1.20:65536",
+                        "192.168.1.20:-1", "192.168.1.20:80a", "example.com:80", "localhost:8080",
+                        "http://192.168.1.20:8080", "999.1.1.1:80", "AA:BB:CC:DD:EE:FF"]:
+            self.assertFalse(is_valid_obc_address("tcp", address), address)
+
+    def test_unknown_transport(self):
+        self.assertFalse(is_valid_obc_address("udp", "192.168.1.20:8080"))
+        self.assertFalse(is_valid_obc_address("", "AA:BB:CC:DD:EE:FF"))
 
 
 if __name__ == "__main__":

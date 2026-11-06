@@ -1253,37 +1253,61 @@ async function saveAutoMerge() {
 // OpenBikeControl Tab — handlebar controllers over BLE or mDNS/TCP
 let _obcDevice = null;
 
+function obcMessage(listEl, text, color) {
+    const p = document.createElement('p');
+    p.style.color = color;
+    p.textContent = text;
+    listEl.replaceChildren(p);
+}
+
 async function scanObcDevices() {
     const listEl = document.getElementById('obc-devices-list');
-    listEl.innerHTML = '<p style="color:#888;">Scanning... (this may take up to 8 seconds)</p>';
+    obcMessage(listEl, 'Scanning... (this may take up to 8 seconds)', '#888');
     try {
         const res = await fetch('/api/obc/discover', { method: 'POST' });
         const data = await res.json();
         if (data.error) {
-            listEl.innerHTML = `<p style="color:#f56565;">Error: ${data.error}</p>`;
+            obcMessage(listEl, `Error: ${data.error}`, '#f56565');
             return;
         }
         if (!data.devices || data.devices.length === 0) {
-            listEl.innerHTML = '<p style="color:#888;">No OpenBikeControl devices found. Make sure the controller is on and advertising.</p>';
+            obcMessage(listEl, 'No OpenBikeControl devices found. Make sure the controller is on and advertising.', '#888');
             return;
         }
-        let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
-        data.devices.forEach((dev, i) => {
-            const selected = _obcDevice && _obcDevice.address === dev.address ? 'checked' : '';
+        // Device names come from BLE/mDNS advertisements — render with textContent only
+        const list = document.createElement('div');
+        list.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+        data.devices.forEach(dev => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;background:#1e1e2e;border-radius:6px;border:1px solid #333;';
+
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'obc-device';
+            radio.style.flexShrink = '0';
+            radio.checked = !!(_obcDevice && _obcDevice.address === dev.address);
+            radio.addEventListener('change', () => {
+                _obcDevice = { transport: dev.transport, address: dev.address };
+            });
+
+            const info = document.createElement('div');
+            info.style.cssText = 'flex:1;min-width:0;';
+            const name = document.createElement('div');
+            name.style.fontWeight = '600';
+            name.textContent = dev.name;
+            const details = document.createElement('div');
+            details.style.cssText = 'color:#888;font-size:0.7em;word-break:break-all;margin-top:2px;';
             const transport = dev.transport === 'tcp' ? 'Network' : 'Bluetooth';
             const signal = dev.rssi !== null && dev.rssi !== undefined ? ` | Signal: ${dev.rssi} dBm` : '';
-            html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#1e1e2e;border-radius:6px;border:1px solid #333;">';
-            html += `<input type="radio" name="obc-device" ${selected} onchange='_obcDevice=${JSON.stringify({ transport: dev.transport, address: dev.address })}' style="flex-shrink:0;">`;
-            html += `<div style="flex:1;min-width:0;">`;
-            html += `<div style="font-weight:600;">${dev.name}</div>`;
-            html += `<div style="color:#888;font-size:0.7em;word-break:break-all;margin-top:2px;">${transport} | ${dev.address}${signal}</div>`;
-            html += `</div>`;
-            html += '</div>';
+            details.textContent = `${transport} | ${dev.address}${signal}`;
+            info.append(name, details);
+
+            row.append(radio, info);
+            list.appendChild(row);
         });
-        html += '</div>';
-        listEl.innerHTML = html;
+        listEl.replaceChildren(list);
     } catch (e) {
-        listEl.innerHTML = `<p style="color:#f56565;">Error: ${e.message}</p>`;
+        obcMessage(listEl, `Error: ${e.message}`, '#f56565');
     }
 }
 
@@ -1296,13 +1320,23 @@ async function refreshObcStatus() {
         const disconnectBtn = document.getElementById('obc-disconnect-btn');
         if (!statusEl) return;
 
+        const badge = document.createElement('span');
+        let detail = '';
         if (data.connected) {
-            statusEl.innerHTML = `<span class="status-badge connected">Connected</span> &mdash; ${data.address}`;
+            badge.className = 'status-badge connected';
+            badge.textContent = 'Connected';
+            detail = data.address;
         } else if (data.active) {
-            statusEl.innerHTML = `<span class="status-badge idle">Connecting</span> &mdash; ${data.message || data.address}`;
+            badge.className = 'status-badge idle';
+            badge.textContent = 'Connecting';
+            detail = data.message || data.address;
         } else {
-            statusEl.innerHTML = `<span class="status-badge idle">Disconnected</span>${data.message ? ' &mdash; ' + data.message : ''}`;
+            badge.className = 'status-badge idle';
+            badge.textContent = 'Disconnected';
+            detail = data.message;
         }
+        statusEl.replaceChildren(badge);
+        if (detail) statusEl.append(` \u2014 ${detail}`);
         connectBtn.disabled = data.active;
         disconnectBtn.disabled = !data.active;
     } catch (e) {

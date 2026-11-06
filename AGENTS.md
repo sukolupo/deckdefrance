@@ -311,6 +311,7 @@ Bluetooth Controller (evdev)
 - **Discovery** is deterministic: BLE devices advertising service UUID `d273f680-d548-419d-b9d1-fa0472345229`, and network devices advertising `_openbikecontrol._tcp.local.` (zeroconf)
 - **BLE** uses the same `async with BleakClient(address, timeout=20.0)` pattern and BlueZ service cache check as the trainer; subscribes to Button State (`d273f681-...`)
 - **TCP** connects to `<ip>:<port>` from the mDNS record
+- `/api/obc/start` only accepts a MAC address (BLE) or an IP address + port 1–65535 (TCP); hostnames and anything else are rejected
 - After connecting, the app sends the **App Information** message (`app id "deckdefrance"`, app version, mapped button IDs) — over BLE to `d273f683-...`, over TCP on the socket
 - Auto-reconnects (up to 10 retries, 3s delay); all held buttons are released on disconnect
 - One physical press can carry several OBC IDs in one message (e.g. Shift Up + Increase Difficulty + Select). IDs newly pressed in the same message count as one press and only the highest priority one fires: **shift > difficulty > navigation/steering > other > select/back**

@@ -9,6 +9,8 @@ Protocol: https://github.com/OpenBikeControl/openbikecontrol-protocol
 """
 
 import asyncio
+import ipaddress
+import re
 from typing import Any, Callable, Dict, List, Tuple
 
 from bleak import BleakClient
@@ -93,6 +95,25 @@ def _axis_value(code: int, fraction: float) -> int:
 
 def _axis_rest(code: int) -> int:
     return 0 if code in (ecodes.ABS_Z, ecodes.ABS_RZ) else _STICK_CENTER
+
+
+_MAC_RE = re.compile(r"[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}")
+
+
+def is_valid_obc_address(transport: str, address: str) -> bool:
+    """BLE: a MAC address. TCP: an IP address (as resolved by mDNS) and a port 1-65535."""
+    if transport == "ble":
+        return bool(_MAC_RE.fullmatch(address))
+    if transport == "tcp":
+        host, sep, port = address.rpartition(":")
+        if not sep or not port.isdigit() or not 1 <= int(port) <= 65535:
+            return False
+        try:
+            ipaddress.ip_address(host)
+        except ValueError:
+            return False
+        return True
+    return False
 
 
 def parse_button_state(data: bytes) -> List[Tuple[int, int]]:

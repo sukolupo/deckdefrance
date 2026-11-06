@@ -15,7 +15,7 @@ from .mapper import map_trainer_to_controller, apply_mappings, device, emit, _BU
 from .config import get_config, update_config, FTP_PRESETS, DEFAULT_CONFIG
 from .discovery import discover_trainers, discover_all_devices, discover_obc_devices
 from .merge import start_merge, stop_merge, get_merge_status, probe_device
-from .obc import start_obc, stop_obc, get_obc_status
+from .obc import start_obc, stop_obc, get_obc_status, is_valid_obc_address
 from .passthrough import (
     start_passthrough,
     stop_passthrough,
@@ -267,6 +267,8 @@ async def obc_start(transport: str | None = None, address: str | None = None):
     address = address or cfg.get("obc_address", "")
     if transport not in ("ble", "tcp") or not address:
         return {"status": "error", "message": "No OpenBikeControl device selected"}
+    if not is_valid_obc_address(transport, address):
+        return {"status": "error", "message": f"Invalid {transport} address: {address}"}
 
     if transport == "ble" and not await _services_cached(address):
         print(f"Services not cached for {address}, caching now...")
