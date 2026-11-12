@@ -1,4 +1,4 @@
-const CACHE = 'deckdefrance-v1';
+const CACHE = 'deckdefrance-v2';
 const PRECACHE = [
   '/',
   '/play',

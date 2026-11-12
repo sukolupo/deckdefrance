@@ -47,6 +47,27 @@ DEFAULT_CONFIG = {
         {"source": "power", "target": "right_trigger"},
         {"source": "power", "target": "btn_a", "threshold": 200},
     ],
+    "obc_transport": "",
+    "obc_address": "",
+    "obc_auto_connect": False,
+    "obc_mappings": [
+        {"source": "shift_up", "target": "btn_rb"},
+        {"source": "shift_down", "target": "btn_lb"},
+        {"source": "increase_difficulty", "target": "btn_rb"},
+        {"source": "decrease_difficulty", "target": "btn_lb"},
+        {"source": "nav_up", "target": "dpad_up"},
+        {"source": "nav_down", "target": "dpad_down"},
+        {"source": "nav_left", "target": "dpad_left"},
+        {"source": "nav_right", "target": "dpad_right"},
+        {"source": "select", "target": "btn_a"},
+        {"source": "back", "target": "btn_b"},
+        {"source": "menu", "target": "btn_start"},
+        {"source": "camera_view", "target": "btn_r3"},
+        {"source": "steer_left", "target": "left_stick_x"},
+        {"source": "steer_right", "target": "left_stick_x"},
+        {"source": "steering_angle", "target": "left_stick_x", "max_angle": 30},
+        {"source": "brake", "target": "left_trigger"},
+    ],
 }
 
 

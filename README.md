@@ -142,6 +142,31 @@ Once the game is running:
 
 ---
 
+## Adding an OpenBikeControl Controller
+
+Handlebar controllers that support [OpenBikeControl](https://openbikecontrol.org) can press buttons on **Trainer Virtual Gamepad** too, over Bluetooth or your Wi-Fi network.
+
+1. Turn on the controller (or start the app that provides it)
+2. Open the dashboard's **OpenBikeControl** tab
+3. Click **Scan** — devices are found by the OpenBikeControl Bluetooth service or network (mDNS) service
+4. Select your controller and click **Connect**
+5. (Optional) Click **Save as Auto-Connect** to connect on every server start
+
+| Controller button | Gamepad |
+|-------------------|---------|
+| Shift Up / Shift Down | RB / LB |
+| Increase / Decrease Difficulty | RB / LB |
+| Up / Down / Left / Right | D-pad |
+| Select / Back | A / B |
+| Menu | Start |
+| Camera View | R3 |
+| Steer Left / Right, Steering Angle | Left stick X |
+| Brake | LT |
+
+Change the mapping with `obc_mappings` in `config.json` (same `source` / `target` format as `mappings`). If one button sends several actions at once, only one fires: shifting first, then difficulty, then navigation, then select/back.
+
+---
+
 ## Dashboard Tabs
 
 | Tab | What it does |
@@ -153,6 +178,7 @@ Once the game is running:
 | **Config** | Change settings like max power, button thresholds, or use a preset (Beginner/Average/Competitive/Pro) |
 | **Test** | Preview how your settings will work without needing the trainer |
 | **Merge** | Add a Bluetooth controller to work alongside the trainer |
+| **OpenBikeControl** | Connect an OpenBikeControl handlebar controller (Bluetooth or network) |
 
 ## Screenshots
 
